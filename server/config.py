@@ -8,13 +8,15 @@ from flask_restful import Api
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
 from flask_bcrypt import Bcrypt
+from dotenv import load_dotenv
 
 # Local imports
 import os
 
 # Instantiate app, set attributes
 app = Flask(__name__)
-app.secret_key = b'cffccf6faa164a4896ad0b2efa28fe7d'
+# app.secret_key = b'cffccf6faa164a4896ad0b2efa28fe7d'
+app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", b'cffccf6faa164a4896ad0b2efa28fe7d')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.json.compact = False

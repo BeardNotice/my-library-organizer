@@ -8,10 +8,38 @@ from faker import Faker
 
 # Local imports
 from app import app
-from models import db
+from models import db, User, Library
 
 if __name__ == '__main__':
     fake = Faker()
     with app.app_context():
         print("Starting seed...")
         # Seed code goes here!
+
+        db.session.query(Library).delete()
+        db.session.query(User).delete()
+        db.session.commit()
+
+        users = []
+
+        for i in range(5):
+            username = fake.unique.user_name()
+            email = fake.unique.email()
+            password = "password123"
+
+            user = User(username=username, email=email)
+            user.set_password(password)
+            db.session.add(user)
+            users.append(user)
+
+        db.session.commit()
+
+        for user in users:
+            for i in range(2):
+                library_name = f"{user.username}'s {fake.word().capitalize()} Library"
+                library = Library(name=library_name, user=user)
+                db.session.add(library)
+        
+            db.session.commit()
+
+        print("Seeding complete!")
