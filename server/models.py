@@ -34,8 +34,10 @@ class User(db.Model, SerializerMixin):
         password_hash = bcrypt.generate_password_hash(password.encode('utf-8'))
         self._password_hash = password_hash.decode('utf-8')
 
-    def check_password(self, password):
+    def authenticate(self, password):
         return bcrypt.check_password_hash(self._password_hash, password.encode('utf-8'))
+    
+    serialize_rules = ('-_password_hash','-libraries.user')
 
 class Library(db.Model, SerializerMixin):
     __tablename__ = "libraries"
@@ -53,6 +55,8 @@ class Library(db.Model, SerializerMixin):
         if not (3 <= len(name) <= 100):
             raise ValueError("Library name must be between 3 and 30 characters.")
         return name
+    
+    serialize_rules = ("-user_id", "-user", "-library_books")
 
 class Book(db.Model, SerializerMixin):
     __tablename__ = "books"
