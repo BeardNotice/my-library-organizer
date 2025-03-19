@@ -16,7 +16,8 @@ import os
 # Instantiate app, set attributes
 app = Flask(__name__)
 # app.secret_key = b'cffccf6faa164a4896ad0b2efa28fe7d'
-app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", b'cffccf6faa164a4896ad0b2efa28fe7d')
+load_dotenv()
+app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", 'cffccf6faa164a4896ad0b2efa28fe7d')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.json.compact = False
