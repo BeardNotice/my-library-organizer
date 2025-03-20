@@ -16,7 +16,7 @@ from models import User, Library, Book, LibraryBooks, UserSchema, LibrarySchema,
 # Views go here!
 @app.before_request
 def login_check():
-    open_access_list = ['signup', 'login', 'check_session']
+    open_access_list = ['signup', 'login', 'check_session', 'books']
 
     if (request.endpoint) not in open_access_list and (not session.get('user_id')):
         return {'error': '401 unauthorized'}, 401
@@ -29,7 +29,7 @@ class Signup(Resource):
         password = data.get("password")
 
         if not username or not email or not password:
-            return {"error": "Missing requried fields"}, 400
+            return {"error": "Missing required fields"}, 400
         existing_user = User.query.filter_by(username=username).first()
         existing_email = User.query.filter_by(email=email).first()
         if existing_user:
@@ -91,9 +91,12 @@ class LibraryIndex(Resource):
             return {"error": "Unauthorized"}, 401
         data = request.get_json()
         name = data['name']
+        private = data.get('private', False)
+        if not name:
+            return {"error": "Missing required field"}
 
         try:
-            library = Library(name=name, user_id=session['user_id'])
+            library = Library(name=name, user_id=session['user_id'], private=private)
             db.session.add(library)
             db.session.commit()
             library_schema = LibrarySchema()
@@ -106,10 +109,32 @@ class LibraryByID(Resource):
         library_list = Library.query.filter_by(id=id).first()
         if not library_list:
             return {"error": "Library not found"}, 404
+        if library_list.private and library_list.user_id != session["user_id"]:
+            return {"error": "Unauthorized to view this library"}, 403
         library_schema = LibrarySchema()
         return make_response(library_schema.dump(library_list), 200)
 
 class LibraryBooksResource(Resource):
+    def put(self, id):
+        library = Library.query.filter_by(id=id).first()
+        if not library:
+            return {"error": "Library not found"}, 404
+        data = request.get_json()
+        name = data.get("name")
+        if not name:
+            return {"error": "Missing required field 'name'"}, 400
+        library.name = name
+        db.session.commit()
+        library_schema = LibrarySchema()
+        return library_schema.dump(library), 200
+    
+    def delete(self, id):
+        library = Library.query.filter_by(id=id).first()
+        if not library:
+            return {"error": "Library not found."}, 404
+        db.session.delete(library)
+        db.session.commit()
+        return {}, 204
 
     def get(self, id):
         library = Library.query.filter(Library.id == id).first()
@@ -135,7 +160,7 @@ class LibraryBooksResource(Resource):
         author = data.get('author')
         genre = data.get('genre')
         published_year = data.get('published_year')
-        rating = data.get('rating')  # Capture rating from request
+        rating = data.get('rating')
 
         if not title or not author:
             return {"error": "Missing required fields"}, 400
@@ -159,7 +184,67 @@ class LibraryBooksResource(Resource):
         db.session.commit()
         library_schema = LibrarySchema()
         return library_schema.dump(library), 201
+    
+class LibraryBookReview(Resource):
+    def put(self, library_id, book_id):
+        user_id = session.get('user_id')
+        if not user_id:
+            return {"error": "Unauthorized"}, 401
+        library = Library.query.get(library_id)
+        if not library or library.user_id != user_id:
+            return {"error": "Unauthorized"}, 401
+        data = request.get_json()
+        try:
+            rating = int(data.get("rating"))
+        except (ValueError, TypeError):
+            return {"error": "Invalid rating provided"}, 400
+        if rating is None:
+            return {"error": "Rating is required"}, 400
+        if rating < 1 or rating > 5:
+            return {"error": "Rating must be between 1 and 5"}, 400
         
+        existing_reviews = LibraryBooks.query.join(Library).filter(Library.user_id == user_id, LibraryBooks.book_id == book_id).all()
+        if existing_reviews:
+            for review in existing_reviews:
+                review.rating = rating
+            db.session.commit()
+            library_books_schema = LibraryBooksSchema()
+            return library_books_schema.dump(existing_reviews[0]), 200
+        else:
+            library_book = LibraryBooks.query.filter_by(library_id=library_id, book_id=book_id).first()
+            if not library_book:
+                library_book = LibraryBooks(library_id=library_id, book_id=book_id, rating=rating)
+                db.session.add(library_book)
+            else:
+                library_book.rating = rating
+            db.session.commit()
+            library_books_schema = LibraryBooksSchema()
+            return library_books_schema.dump(library_book), 200
+
+    
+    def delete(self, library_id, book_id):
+        user_id = session.get('user_id')
+        if not user_id:
+            return {"error": "Unauthorized"}, 401
+        library = Library.query.get(library_id)
+        if not library or library.user_id != user_id:
+            return {"error": "Unauthorized"}, 401
+        library_book = LibraryBooks.query.filter_by(library_id=library_id, book_id=book_id).first()
+        if not library_book:
+            return {"error": "Library book association not found"}, 404
+        book = Book.query.get(book_id)
+        if library and book and book in library.books:
+            library.books.remove(book)
+        db.session.delete(library_book)
+        db.session.commit()
+        return {}, 204
+            
+class BooksIndex(Resource):
+    def get(self):
+        books = Book.query.all()
+        user_id = session.get('user_id')
+        book_schema = BookSchema(many=True, context={'user_id': user_id})
+        return book_schema.dump(books), 200
 
 api.add_resource(Signup, "/signup", endpoint='signup')
 api.add_resource(Login, "/login", endpoint='login')
@@ -168,6 +253,8 @@ api.add_resource(CheckSession, "/check_session", endpoint="check_session")
 api.add_resource(LibraryIndex, "/library", endpoint="library")
 api.add_resource(LibraryByID, "/library/<int:id>")
 api.add_resource(LibraryBooksResource, "/library/<int:id>/books")
+api.add_resource(LibraryBookReview, "/library/<int:library_id>/books/<int:book_id>")
+api.add_resource(BooksIndex, "/books", endpoint="books")
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
 

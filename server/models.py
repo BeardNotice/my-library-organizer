@@ -45,6 +45,7 @@ class Library(db.Model, SerializerMixin):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    private = db.Column(db.Boolean, default=False, nullable=False)
     
     user = db.relationship("User", back_populates="libraries")
     library_books = db.relationship("LibraryBooks", back_populates="library", cascade="all, delete-orphan")
@@ -90,6 +91,9 @@ class LibraryBooks(db.Model, SerializerMixin):
         if rating is not None and (rating < 1 or rating > 5):
             raise ValueError("Rating must be between 1 and 5.")
         return rating
+    @property
+    def user_id(self):
+        return self.library.user_id
 
 class UserSchema(ma.SQLAlchemySchema):
     class Meta:
@@ -110,6 +114,20 @@ class BookSchema(ma.SQLAlchemySchema):
     author = ma.auto_field()
     genre = ma.auto_field()
     published_year = ma.auto_field()
+    review_score = ma.Method('calculate_review_score')
+
+    def calculate_review_score(self, obj):
+        current_user_id = self.context.get('user_id')
+        if current_user_id:
+            user_reviews = [lb for lb in obj.library_books if lb.library.user_id == current_user_id and lb.rating is not None]
+            if user_reviews:
+                latest_review = max(user_reviews, key=lambda x:x.id)
+                return latest_review.rating
+            return None
+        else:
+            all_reviews = [lb.rating for lb in obj.library_books if lb.rating is not None]
+            if all_reviews:
+                return sum(all_reviews) / len(all_reviews)
 
 class LibrarySchema(ma.SQLAlchemySchema):
     class Meta:
@@ -119,6 +137,7 @@ class LibrarySchema(ma.SQLAlchemySchema):
     id = ma.auto_field()
     name = ma.auto_field()
     user_id = ma.auto_field()
+    private = ma.auto_field()
     books = ma.List(ma.Nested(BookSchema(only=("id", "title"))))
 
     # @pre_dump
