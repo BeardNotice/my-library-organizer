@@ -122,12 +122,16 @@ class BookSchema(ma.SQLAlchemySchema):
             user_reviews = [lb for lb in obj.library_books if lb.library.user_id == current_user_id and lb.rating is not None]
             if user_reviews:
                 latest_review = max(user_reviews, key=lambda x:x.id)
-                return latest_review.rating
-            return None
+                rating = latest_review.rating
+            else:
+                rating = None
         else:
             all_reviews = [lb.rating for lb in obj.library_books if lb.rating is not None]
             if all_reviews:
-                return sum(all_reviews) / len(all_reviews)
+                rating = sum(all_reviews) / len(all_reviews)
+            else:
+                rating = None
+        return round(rating, 2) if rating is not None else "not yet rated"
 
 class LibrarySchema(ma.SQLAlchemySchema):
     class Meta:

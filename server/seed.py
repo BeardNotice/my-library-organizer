@@ -8,7 +8,7 @@ from faker import Faker
 
 # Local imports
 from app import app
-from models import db, User, Library, Book
+from models import db, User, Library, Book, LibraryBooks
 
 if __name__ == '__main__':
     fake = Faker()
@@ -50,15 +50,15 @@ if __name__ == '__main__':
             author = fake.name()
             genre = fake.word()
             published_year = int(fake.year())
-            
+
             book = Book(title=title, author=author, genre=genre, published_year=published_year)
             db.session.add(book)
             books.append(book)
         db.session.commit()
 
-        # Associate books with libraries
+
         for library in libraries:
-            num_books = randint(3, 6)
+            num_books = randint(4, 6)
             selected_books = set()
             available_books = set(books)
             while len(selected_books) < num_books and available_books:
@@ -66,7 +66,9 @@ if __name__ == '__main__':
                 selected_books.add(book)
                 available_books.remove(book)
             for book in selected_books:
-                library.books.append(book)
+                rating = randint(1, 5)
+                library_book = LibraryBooks(library_id=library.id, book_id=book.id, rating=rating)
+                db.session.add(library_book)
         db.session.commit()
 
         print("Seeding complete!")
