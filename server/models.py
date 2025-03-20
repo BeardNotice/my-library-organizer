@@ -4,8 +4,10 @@ from sqlalchemy.ext.hybrid import hybrid_property
 import re
 from sqlalchemy.orm import validates
 import datetime
+from marshmallow import pre_dump
 
-from config import db, bcrypt
+from config import db, bcrypt, ma
+
 
 # Models go here!
 
@@ -36,8 +38,6 @@ class User(db.Model, SerializerMixin):
 
     def authenticate(self, password):
         return bcrypt.check_password_hash(self._password_hash, password.encode('utf-8'))
-    
-    serialize_rules = ('-_password_hash','-libraries.user')
 
 class Library(db.Model, SerializerMixin):
     __tablename__ = "libraries"
@@ -55,8 +55,6 @@ class Library(db.Model, SerializerMixin):
         if not (3 <= len(name) <= 100):
             raise ValueError("Library name must be between 3 and 30 characters.")
         return name
-    
-    serialize_rules = ("-user_id", "-user", "-library_books")
 
 class Book(db.Model, SerializerMixin):
     __tablename__ = "books"
@@ -92,3 +90,48 @@ class LibraryBooks(db.Model, SerializerMixin):
         if rating is not None and (rating < 1 or rating > 5):
             raise ValueError("Rating must be between 1 and 5.")
         return rating
+
+class UserSchema(ma.SQLAlchemySchema):
+    class Meta:
+        model = User
+        load_instance = True
+        
+    id = ma.auto_field()
+    username = ma.auto_field()
+    email = ma.auto_field()
+
+class BookSchema(ma.SQLAlchemySchema):
+    class Meta:
+        model = Book
+        load_instance = True
+
+    id = ma.auto_field()
+    title = ma.auto_field()
+    author = ma.auto_field()
+    genre = ma.auto_field()
+    published_year = ma.auto_field()
+
+class LibrarySchema(ma.SQLAlchemySchema):
+    class Meta:
+        model = Library
+        load_instance = True
+
+    id = ma.auto_field()
+    name = ma.auto_field()
+    user_id = ma.auto_field()
+    books = ma.List(ma.Nested(BookSchema(only=("id", "title"))))
+
+    # @pre_dump
+    # def remove_invalid_books(self, data, **kwargs):
+    #     data.books = [book for book in data.books if isinstance(book, Book)]
+    #     return data
+
+class LibraryBooksSchema(ma.SQLAlchemySchema):
+    class Meta:
+        model = LibraryBooks
+        load_instance = True
+
+    library_id = ma.auto_field()
+    book_id = ma.auto_field()
+    rating = ma.auto_field()
+    book = ma.Nested(BookSchema(only=("id", "title")))
