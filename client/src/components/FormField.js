@@ -1,12 +1,12 @@
 import React from 'react';
 import { Field, ErrorMessage } from 'formik';
 
-function FormField({ label, name, type = 'text' }) {
+function FormField({ label, ...props }) {
   return (
     <div className="form-group">
-      <label htmlFor={name}>{label}:</label>
-      <Field type={type} id={name} name={name} />
-      <ErrorMessage name={name} component="div" className="error" />
+      <label htmlFor={props.name}>{label}:</label>
+      <Field id={props.name} {...props} />
+      <ErrorMessage name={props.name} component="div" className="error" />
     </div>
   );
 }

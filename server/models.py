@@ -115,23 +115,17 @@ class BookSchema(ma.SQLAlchemySchema):
     genre = ma.auto_field()
     published_year = ma.auto_field()
     review_score = ma.Method('calculate_review_score')
+    globalRating = ma.Method('calculate_global_rating')
 
     def calculate_review_score(self, obj):
-        current_user_id = self.context.get('user_id')
-        if current_user_id:
-            user_reviews = [lb for lb in obj.library_books if lb.library.user_id == current_user_id and lb.rating is not None]
-            if user_reviews:
-                latest_review = max(user_reviews, key=lambda x:x.id)
-                rating = latest_review.rating
-            else:
-                rating = None
-        else:
-            all_reviews = [lb.rating for lb in obj.library_books if lb.rating is not None]
-            if all_reviews:
-                rating = sum(all_reviews) / len(all_reviews)
-            else:
-                rating = None
+        all_ratings = [lb.rating for lb in obj.library_books if lb.rating is not None]
+        rating = sum(all_ratings) / len(all_ratings) if all_ratings else None
         return round(rating, 2) if rating is not None else "not yet rated"
+    
+    def calculate_global_rating(self, obj):
+        all_ratings = [lb.rating for lb in obj.library_books if lb.rating is not None]
+        rating = sum(all_ratings) / len(all_ratings) if all_ratings else None
+        return round(rating, 2) if rating is not None else None
 
 class LibrarySchema(ma.SQLAlchemySchema):
     class Meta:
@@ -142,7 +136,7 @@ class LibrarySchema(ma.SQLAlchemySchema):
     name = ma.auto_field()
     user_id = ma.auto_field()
     private = ma.auto_field()
-    books = ma.List(ma.Nested(BookSchema(only=("id", "title", "author", "genre"))))
+    books = ma.Nested(BookSchema, many=True)
 
     # @pre_dump
     # def remove_invalid_books(self, data, **kwargs):

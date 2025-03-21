@@ -157,7 +157,7 @@ class LibraryBooksResource(Resource):
         library = Library.query.filter(Library.id == id).first()
         if not library:
             return {"error": "Library not found"}, 404
-
+ 
         data = request.get_json()
         book_id = data.get('book_id')
         title = data.get('title')
@@ -165,9 +165,12 @@ class LibraryBooksResource(Resource):
         genre = data.get('genre')
         published_year = data.get('published_year')
         rating = data.get('rating')
-
-        if not title or not author:
-            return {"error": "Missing required fields"}, 400
+ 
+        if not title:
+            return {"error": "Missing required field 'title'"}, 400
+        if not author:
+            # If author is not provided, default to 'Unknown'
+            author = "Unknown"
 
         if rating is not None and (rating < 1 or rating > 5):
             return {"error": "Rating must be between 1 and 5"}, 400
@@ -206,14 +209,22 @@ class LibraryBookReview(Resource):
             return {"error": "Rating is required"}, 400
         if rating < 1 or rating > 5:
             return {"error": "Rating must be between 1 and 5"}, 400
-        
-        existing_reviews = LibraryBooks.query.join(Library).filter(Library.user_id == user_id, LibraryBooks.book_id == book_id).all()
+
+        # Check if there are existing reviews (LibraryBooks entries) for this book
+        existing_reviews = LibraryBooks.query.join(Library).filter(
+            Library.user_id == user_id, LibraryBooks.book_id == book_id
+        ).all()
+
         if existing_reviews:
             for review in existing_reviews:
                 review.rating = rating
             db.session.commit()
             library_books_schema = LibraryBooksSchema()
-            return library_books_schema.dump(existing_reviews[0]), 200
+            updated_review = library_books_schema.dump(existing_reviews[0])
+            # Ensure the response includes the updated rating fields
+            updated_review['userRating'] = existing_reviews[0].rating
+            updated_review['globalRating'] = existing_reviews[0].rating
+            return updated_review, 200
         else:
             library_book = LibraryBooks.query.filter_by(library_id=library_id, book_id=book_id).first()
             if not library_book:
@@ -223,7 +234,10 @@ class LibraryBookReview(Resource):
                 library_book.rating = rating
             db.session.commit()
             library_books_schema = LibraryBooksSchema()
-            return library_books_schema.dump(library_book), 200
+            updated_review = library_books_schema.dump(library_book)
+            updated_review['userRating'] = library_book.rating
+            updated_review['globalRating'] = library_book.rating
+            return updated_review, 200
 
     
     def delete(self, library_id, book_id):
