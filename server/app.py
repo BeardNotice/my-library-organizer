@@ -16,6 +16,10 @@ from models import User, Library, Book, LibraryBooks, UserSchema, LibrarySchema,
 # Views go here!
 @app.before_request
 def login_check():
+    
+    if request.method =='OPTIONS':
+        return
+    
     open_access_list = ['signup', 'login', 'check_session', 'books']
 
     if (request.endpoint) not in open_access_list and (not session.get('user_id')):

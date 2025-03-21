@@ -99,7 +99,7 @@ function NewBook() {
             <FormField label="Author" name="author" type="text" />
             <FormField label="Genre" name="genre" type="text" />
             <FormField label="Published Year" name="published_year" type="number" />
-            <FormField label="Rating" name="rating" type="number" />
+            <FormField label="Rating" name="rating" type="number" min='1' max='5'/>
             <button type="submit" disabled={formik.isSubmitting}>
               Add Book
             </button>

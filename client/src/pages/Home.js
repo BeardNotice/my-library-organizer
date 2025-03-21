@@ -41,12 +41,16 @@ function Home() {
       {libraryData && libraryData.length > 0 ? (
          <Library libraryData={libraryData} />
       ) : (
-         <p>No library data found.</p>
+         <p>You currently have no libraries, create one to add books.</p>
       )}
       <div className="button-group">
-        <Link to="/books/new" className="btn">
-          Add New Book
-        </Link>
+        {libraryData && libraryData.length > 0 ? (<Link to="/books/new" className='btn'>
+        Add New Book
+        </Link>) : (
+          <Link to="/library/new" className='btn'>
+            Create Library
+          </Link>
+        )}
       </div>
     </div>
   );
