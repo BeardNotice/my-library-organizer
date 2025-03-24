@@ -4,6 +4,7 @@ import App from './App';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import BookIndex from './pages/BookIndex'
 //import LibraryDashboard from './pages/LibraryDashboard';
 import CreateLibrary from './pages/CreateLibrary';
 //import BookDetail from './pages/BookDetail';
@@ -24,7 +25,7 @@ function AppRoutes() {
             {/* <Route index element={<LibraryDashboard />} /> */}
             <Route path="new" element={<CreateLibrary />} />
           </Route>
-          <Route path="books">
+          <Route path="books" element={<BookIndex />}>
             <Route path="new" element={<NewBook />} />
             {/* <Route path=":bookId" element={<BookDetail />} /> */}
             {/* <Route path=":bookId/edit" element={<EditBook />} /> */}

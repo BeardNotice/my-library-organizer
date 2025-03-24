@@ -30,48 +30,50 @@ function Home() {
       });
   }, [navigate]);
 
-  // Function to handle rating changes
-  const handleRating = (bookId, newRating) => {
-    // Assume libraryData is an array of libraries; here we work with the first library
-    const libraryId = libraryData[0].id;
-    // Update the rating via PUT request
-    fetch(`http://localhost:5555/library/${libraryId}/books/${bookId}`, {
-      method: 'PUT',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rating: newRating })
+  // Handle rating click from a book card
+const handleRating = (bookId, newRating) => {
+  // Assume libraryData is an array of libraries; here we work with the first library
+  const libraryId = libraryData[0].id;
+  // Update the rating via PUT request
+  fetch(`http://localhost:5555/library/${libraryId}/books/${bookId}`, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rating: newRating })
+  })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to update rating');
+      }
+      return response.json();
     })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Failed to update rating');
-        }
-        return response.json();
-      })
-      .then(updatedBook => {
-        // Update local state to reflect the new user rating
-        setLibraryData(prevData => {
-          const updatedData = prevData.map(lib => {
-            if (lib.id === libraryId) {
-              return {
-                ...lib,
-                books: lib.books.map(book => {
-                  if (book.id === bookId) {
-                    // Assuming updatedBook returns the new user rating as 'userRating'
-                    return { ...book, userRating: updatedBook.userRating, globalRating: updatedBook.globalRating };
-                  }
-                  return book;
-                })
-              };
-            }
-            return lib;
-          });
-          return updatedData;
-        });
-      })
-      .catch(error => {
-        console.error('Error updating rating:', error);
-      });
-  };
+    .then(updatedBook => {
+      // Instead of re-fetching, update the libraryData state directly:
+      setLibraryData(prevData =>
+        prevData.map(lib => {
+          if (lib.id === libraryId) {
+            return {
+              ...lib,
+              books: lib.books.map(book => {
+                if (book.id === bookId) {
+                  return {
+                    ...book,
+                    userRating: updatedBook.userRating,
+                    globalRating: updatedBook.globalRating
+                  };
+                }
+                return book;
+              })
+            };
+          }
+          return lib;
+        })
+      );
+    })
+    .catch(error => {
+      console.error('Error updating rating:', error);
+    });
+};
 
   if (loading) {
     return <p>Loading your library...</p>;

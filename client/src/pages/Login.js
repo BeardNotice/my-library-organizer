@@ -17,30 +17,30 @@ function Login() {
     password: Yup.string().required('Required')
   });
 
-  const onSubmit = (values, { setSubmitting, setErrors }) => {
-    fetch('http://localhost:5555/login', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(values)
-    })
-      .then(response => {
-        if (response.ok) {
-          navigate('/');
-          return response.json();
-        } else {
-          return response.json().then(data => {
-            setErrors({ password: data.error || 'Login failed' });
-            throw new Error('Login failed');
-          });
-        }
-      })
-      .catch(error => {
-        console.error('Login error:', error);
-      })
-      .finally(() => {
-        setSubmitting(false);
+  const onSubmit = async (values, { setSubmitting, setErrors }) => {
+    try {
+      const response = await fetch('http://localhost:5555/login', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values)
       });
+
+      if (response.ok) {
+        navigate('/');
+        const text = await response.text();
+        return text ? JSON.parse(text) : {};
+      } else {
+        const data = await response.json();
+        const errorMessage = data.error || 'Login failed';
+        setErrors({ password: errorMessage });
+        throw new Error(errorMessage);
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

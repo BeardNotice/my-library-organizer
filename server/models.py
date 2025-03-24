@@ -114,18 +114,30 @@ class BookSchema(ma.SQLAlchemySchema):
     author = ma.auto_field()
     genre = ma.auto_field()
     published_year = ma.auto_field()
+    userRating = ma.Method('get_user_rating')
     review_score = ma.Method('calculate_review_score')
     globalRating = ma.Method('calculate_global_rating')
+
+    def get_user_rating(self, obj):
+        user_id = self.context.get('user_id')
+        if user_id and hasattr(obj, 'library_books'):
+            for lb in obj.library_books:
+                if lb.library and lb.library.user_id == user_id:
+                    return lb.rating
+        return None
+
+    def calculate_global_rating(self, obj):
+        user_id = self.context.get('user_id')
+        ratings = [lb.rating for lb in obj.library_books 
+                   if lb.rating is not None and (user_id is None or lb.library.user_id != user_id)]
+        if ratings:
+             return round(sum(ratings) / len(ratings), 2)
+        return None
 
     def calculate_review_score(self, obj):
         all_ratings = [lb.rating for lb in obj.library_books if lb.rating is not None]
         rating = sum(all_ratings) / len(all_ratings) if all_ratings else None
         return round(rating, 2) if rating is not None else "not yet rated"
-    
-    def calculate_global_rating(self, obj):
-        all_ratings = [lb.rating for lb in obj.library_books if lb.rating is not None]
-        rating = sum(all_ratings) / len(all_ratings) if all_ratings else None
-        return round(rating, 2) if rating is not None else None
 
 class LibrarySchema(ma.SQLAlchemySchema):
     class Meta:

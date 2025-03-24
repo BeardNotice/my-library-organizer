@@ -28,17 +28,16 @@ function BookCard({ book, onRate }) {
       <p>Author: {book.author}</p>
       <p>Genre: {book.genre}</p>
       <p>Published Year: {book.published_year}</p>
-      <div className="rating-section">
-        <p>
-          {book.userRating
-            ? `Your Rating: ${book.userRating}`
-            : `Global Rating: ${book.globalRating || book.rating || 'N/A'}`}
-        </p>
-        <StarRating
-          rating={book.userRating || book.globalRating || 0}
-          onRate={onRate ? (newRating) => onRate(book.id, newRating) : undefined}
-        />
-      </div>
+    <div className="rating-section">
+        <p>Your Rating: {book.userRating || 'N/A'}</p>
+        <p>Global Rating: {book.globalRating || book.rating || 'N/A'}</p>
+        {onRate && (
+          <StarRating
+            rating={book.userRating || 0}
+            onRate={(newRating) => onRate(book.id, newRating)}
+          />
+        )}
+    </div>
       <Link to={`/books/${book.id}`} className="btn">
         View Details
       </Link>

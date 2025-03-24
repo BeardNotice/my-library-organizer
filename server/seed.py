@@ -38,8 +38,8 @@ if __name__ == '__main__':
         for user in users:
             for _ in range(2):
                 library_name = f"{user.username}'s {fake.word().capitalize()} Library"
-                is_private = fake.boolean(chance_of_getting_true=30)
-                library = Library(name=library_name, user=user, private=is_private)
+                # is_private = fake.boolean(chance_of_getting_true=30)
+                library = Library(name=library_name, user=user, private=False)
                 db.session.add(library)
                 libraries.append(library)
         db.session.commit()
