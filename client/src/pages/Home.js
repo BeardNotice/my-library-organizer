@@ -105,7 +105,6 @@ function Home() {
               <p>No books found in this library.</p>
             )}
             <div className="button-group">
-              {/* Replace Link with button to open modal */}
               <button className="btn" onClick={() => setShowLibraryModal(true)}>
                 Add New Book
               </button>

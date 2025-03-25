@@ -2,7 +2,6 @@ import React, { useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { SessionContext } from '../App';
 
-// StarRating component using Unicode stars
 function StarRating({ rating, onRate }) {
   const [hover, setHover] = useState(0);
   return (
