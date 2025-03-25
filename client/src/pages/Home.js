@@ -6,8 +6,8 @@ function Home() {
   const [libraryData, setLibraryData] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-
-  useEffect(() => {
+  
+  const refreshLibraryData = () => {
     fetch('http://localhost:5555/library', { credentials: 'include' })
       .then(response => {
         if (response.status === 401) {
@@ -28,83 +28,76 @@ function Home() {
       .finally(() => {
         setLoading(false);
       });
+  };
+  
+  useEffect(() => {
+    refreshLibraryData();
   }, [navigate]);
-
-  // Handle rating click from a book card
-const handleRating = (bookId, newRating) => {
-  // Assume libraryData is an array of libraries; here we work with the first library
-  const libraryId = libraryData[0].id;
-  // Update the rating via PUT request
-  fetch(`http://localhost:5555/library/${libraryId}/books/${bookId}`, {
-    method: 'PUT',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ rating: newRating })
-  })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Failed to update rating');
-      }
-      return response.json();
-    })
-    .then(updatedBook => {
-      // Instead of re-fetching, update the libraryData state directly:
-      setLibraryData(prevData =>
-        prevData.map(lib => {
-          if (lib.id === libraryId) {
-            return {
-              ...lib,
-              books: lib.books.map(book => {
-                if (book.id === bookId) {
-                  return {
-                    ...book,
-                    userRating: updatedBook.userRating,
-                    globalRating: updatedBook.globalRating
-                  };
-                }
-                return book;
-              })
-            };
-          }
-          return lib;
-        })
-      );
-    })
-    .catch(error => {
-      console.error('Error updating rating:', error);
-    });
-};
 
   if (loading) {
     return <p>Loading your library...</p>;
   }
 
-  // For this example, assume we are displaying books from the first library
-  const currentLibrary = libraryData && libraryData.length > 0 ? libraryData[0] : null;
-
   return (
     <div className="home-container">
-      <h1>Your Library</h1>
-      {currentLibrary && currentLibrary.books && currentLibrary.books.length > 0 ? (
-        <div className="book-list">
-          {currentLibrary.books.map(book => (
-            <BookCard key={book.id} book={book} onRate={handleRating} />
-          ))}
-        </div>
+      <h1>Your Libraries</h1>
+      {libraryData && libraryData.length > 0 ? (
+        libraryData.map(library => (
+          <div key={library.id} className="library-section">
+            <h2>{library.name}</h2>
+            {library.books && library.books.length > 0 ? (
+              <div className="book-list">
+                {library.books.map(book => {
+                  const handleRating = (bookId, newRating) => {
+                    fetch(`http://localhost:5555/library/${library.id}/books/${bookId}`, {
+                      method: 'PUT',
+                      credentials: 'include',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ rating: newRating })
+                    })
+                      .then(response => {
+                        if (!response.ok) {
+                          throw new Error('Failed to update rating');
+                        }
+                        return response.json();
+                      })
+                      .then(() => {
+                        refreshLibraryData();
+                      })
+                      .catch(error => {
+                        console.error('Error updating rating:', error);
+                      });
+                  };
+
+                  return (
+                    <BookCard key={book.id} book={book} onRate={handleRating} />
+                  );
+                })}
+              </div>
+            ) : (
+              <p>No books found in this library.</p>
+            )}
+            <div className="button-group">
+              <Link to={`/books/new?libraryId=${library.id}`} className="btn">
+                Add New Book
+              </Link>
+            </div>
+          </div>
+        ))
       ) : (
-        <p>No books found in your library.</p>
-      )}
-      <div className="button-group">
-        {libraryData && libraryData.length > 0 ? (
-          <Link to="/books/new" className="btn">
-            Add New Book
-          </Link>
-        ) : (
+        <div className="button-group">
           <Link to="/library/new" className="btn">
             Create Library
           </Link>
-        )}
-      </div>
+        </div>
+      )}
+      {libraryData && libraryData.length > 0 && (
+        <div className="button-group">
+          <Link to="/library/new" className="btn">
+            Add Another Library
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

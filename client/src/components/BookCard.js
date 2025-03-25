@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
+import { SessionContext } from '../App';
 
 // StarRating component using Unicode stars
 function StarRating({ rating, onRate }) {
@@ -22,14 +23,16 @@ function StarRating({ rating, onRate }) {
 }
 
 function BookCard({ book, onRate }) {
+  const { isLoggedIn } = useContext(SessionContext);
+
   return (
     <div className="book-card">
       <h3>{book.title}</h3>
       <p>Author: {book.author}</p>
       <p>Genre: {book.genre}</p>
       <p>Published Year: {book.published_year}</p>
-    <div className="rating-section">
-        <p>Your Rating: {book.userRating || 'N/A'}</p>
+      <div className="rating-section">
+        { isLoggedIn ? <p>Your Rating: {book.userRating}</p> : null }
         <p>Global Rating: {book.globalRating || book.rating || 'N/A'}</p>
         {onRate && (
           <StarRating
@@ -37,7 +40,7 @@ function BookCard({ book, onRate }) {
             onRate={(newRating) => onRate(book.id, newRating)}
           />
         )}
-    </div>
+      </div>
       <Link to={`/books/${book.id}`} className="btn">
         View Details
       </Link>

@@ -1,34 +1,39 @@
 import React, { useState, useEffect } from 'react';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import FormField from '../components/FormField';
 import AutocompleteBookSelect from '../components/AutocompleteBookSelect';
 
 function NewBook() {
   const [libraryId, setLibraryId] = useState(null);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-  // Fetch the library info on component mount
   useEffect(() => {
-    fetch('http://localhost:5555/library', { credentials: 'include' })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Not authenticated or error fetching library');
-        }
-        return response.json();
-      })
-      .then(data => {
-        if (data && data.length > 0) {
-          setLibraryId(data[0].id);
-        } else {
-          console.error('No library found for this user');
-        }
-      })
-      .catch(error => {
-        console.error('Error fetching library:', error);
-      });
-  }, []);
+    const queryLibraryId = searchParams.get('libraryId');
+    if (queryLibraryId) {
+      setLibraryId(queryLibraryId);
+    } else {
+      fetch('http://localhost:5555/library', { credentials: 'include' })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Not authenticated or error fetching library');
+          }
+          return response.json();
+        })
+        .then(data => {
+          if (data && data.length > 0) {
+            setLibraryId(data[0].id);
+          } else {
+            console.error('No library found for this user');
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching library:', error);
+        });
+    }
+  }, [searchParams]);
 
   const initialValues = {
     title: '',
@@ -73,20 +78,14 @@ function NewBook() {
         payload.author = values.selectedBook.author;
       }
     }
-    // Remove the extra field before sending
     delete payload.selectedBook;
 
-    // Explicitly convert empty strings to null for numeric fields
     if (payload.published_year === '') {
       payload.published_year = null;
     } else {
-      // Convert to a number
       payload.published_year = Number(payload.published_year);
     }
 
- 
-
-    // Log payload to help with debugging
     console.log('Payload being sent:', payload);
 
     fetch(`http://localhost:5555/library/${libraryId}/books`, {

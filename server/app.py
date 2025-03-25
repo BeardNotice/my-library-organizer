@@ -12,6 +12,19 @@ from config import app, db, api, ma
 # Add your model imports
 from models import User, Library, Book, LibraryBooks, UserSchema, LibrarySchema, BookSchema, LibraryBooksSchema
 
+def get_current_user():
+    return User.query.get(session.get('user_id'))
+
+def get_library_by_id(library_id, require_owner=False):
+    """Fetch a library by ID. If require_owner is True, ensure the current user owns the library."""
+    library = Library.query.get(library_id)
+    if not library:
+        return None
+    if library.private and library.user_id != session.get('user_id'):
+        return None
+    if require_owner and library.user_id != session.get('user_id'):
+        return None
+    return library
 
 # Views go here!
 @app.before_request
@@ -86,28 +99,24 @@ class CheckSession(Resource):
     
 class LibraryIndex(Resource):
     def get(self):
-        user_id = session.get('user_id')
-        if not user_id:
-            return {"error": "User not authenticated"}, 401
-        user = User.query.filter(User.id == user_id).first()
+        user = get_current_user()
         if not user:
-            return {"error": "User not found"}, 404
-                    
+            return {"error": "User not authenticated"}, 401
         library_schema = LibrarySchema(context={'user_id': session.get('user_id')}, many=True)
         return library_schema.dump(user.libraries), 200
     
     def post(self):
-        user_id = session['user_id']
-        if not user_id:
+        user = get_current_user()
+        if not user:
             return {"error": "Unauthorized"}, 401
         data = request.get_json()
-        name = data['name']
+        name = data.get('name')
         private = data.get('private', False)
         if not name:
-            return {"error": "Missing required field"}
+            return {"error": "Missing required field"}, 400
 
         try:
-            library = Library(name=name, user_id=session['user_id'], private=private)
+            library = Library(name=name, user_id=user.id, private=private)
             db.session.add(library)
             db.session.commit()
             library_schema = LibrarySchema()
@@ -117,19 +126,17 @@ class LibraryIndex(Resource):
 
 class LibraryByID(Resource):
     def get(self, id):
-        library_list = db.session.get(Library, id)
-        if not library_list:
+        library = get_library_by_id(id)
+        if not library:
             return {"error": "Library not found"}, 404
-        if library_list.private and library_list.user_id != session["user_id"]:
-            return {"error": "Unauthorized to view this library"}, 403
         library_schema = LibrarySchema()
-        return make_response(library_schema.dump(library_list), 200)
+        return make_response(library_schema.dump(library), 200)
 
 class LibraryBooksResource(Resource):
     def put(self, id):
-        library = Library.query.filter_by(id=id).first()
+        library = get_library_by_id(id)
         if not library:
-            return {"error": "Library not found"}, 404
+            return {"error": "Library not found or access unauthorized"}, 404
         data = request.get_json()
         name = data.get("name")
         if not name:
@@ -140,7 +147,7 @@ class LibraryBooksResource(Resource):
         return library_schema.dump(library), 200
     
     def delete(self, id):
-        library = Library.query.filter_by(id=id).first()
+        library = get_library_by_id(id)
         if not library:
             return {"error": "Library not found."}, 404
         db.session.delete(library)
@@ -148,28 +155,17 @@ class LibraryBooksResource(Resource):
         return {}, 204
 
     def get(self, id):
-        library = Library.query.filter(Library.id == id).first()
+        library = get_library_by_id(id)
         if not library:
             return {"error": "Library not found"}, 404
-        # books = library.books
-        # for book in books:
-        #     latest_entry = LibraryBooks.query.filter_by(library_id = library.id, book_id=book.id).order_by(LibraryBooks.id.desc()).first()
-        #     if latest_entry:
-        #         book.userRating=latest_entry.rating
-        #     else:
-        #         book.userRating=None
 
         book_schema = BookSchema(many=True)
         return book_schema.dump(library.books), 200
     
     def post(self, id):
-        user_id = session["user_id"]
-        if not user_id:
-            return {"error": "Unauthorized"}, 401
-        
-        library = Library.query.filter(Library.id == id).first()
+        library = get_library_by_id(id)
         if not library:
-            return {"error": "Library not found"}, 404
+            return {"error": "Library not found or access unauthorized"}, 404
  
         data = request.get_json()
         book_id = data.get('book_id')
@@ -193,7 +189,7 @@ class LibraryBooksResource(Resource):
             db.session.add(book)
             db.session.commit()
         
-        if book and book not in library.books:
+        if book not in library.books:
             library.books.append(book)
 
         library_book = LibraryBooks.query.filter_by(library_id=id, book_id=book.id).first()
@@ -201,17 +197,17 @@ class LibraryBooksResource(Resource):
             library_book.rating = rating
 
         db.session.commit()
-        library_schema = LibrarySchema()
+        library_schema = LibrarySchema(context={'user_id': session.get('user_id')})
         return library_schema.dump(library), 201
     
 class LibraryBookReview(Resource):
     def put(self, library_id, book_id):
-        user_id = session.get('user_id')
-        if not user_id:
+        user = get_current_user()
+        if not user:
             return {"error": "Unauthorized"}, 401
-        library = db.session.get(Library, library_id)
-        if not library or library.user_id != user_id:
-            return {"error": "Unauthorized"}, 401
+        library = get_library_by_id(library_id, require_owner=True)
+        if not library:
+            return {"error": "Unauthorized or library not found"}, 401
         data = request.get_json()
         try:
             rating = int(data.get("rating"))
@@ -222,37 +218,28 @@ class LibraryBookReview(Resource):
         if rating < 1 or rating > 5:
             return {"error": "Rating must be between 1 and 5"}, 400
 
-        existing_reviews = LibraryBooks.query.join(Library).filter(
-            Library.user_id == user_id, LibraryBooks.book_id == book_id
+        library_books = db.session.query(LibraryBooks).join(Library).filter(
+            LibraryBooks.book_id == book_id,
+            Library.user_id == user.id
         ).all()
+        if not library_books:
+            return {"error": "No library associations found for this book for the current user"}, 404
+        
+        for lb in library_books:
+            lb.rating = rating
 
-        if existing_reviews:
-            for review in existing_reviews:
-                review.rating = rating
-            db.session.commit()
-            updated_book = db.session.get(Book, book_id)
-            updated_book_json = BookSchema(context={'user_id': user_id}).dump(updated_book)
-            return updated_book_json, 200
-        else:
-            library_book = LibraryBooks.query.filter_by(library_id=library_id, book_id=book_id).first()
-            if not library_book:
-                library_book = LibraryBooks(library_id=library_id, book_id=book_id, rating=rating)
-                db.session.add(library_book)
-            else:
-                library_book.rating = rating
-            db.session.commit()
-            updated_book = db.session.get(Book, book_id)
-            updated_book_json = BookSchema(context={'user_id': user_id}).dump(updated_book)
-            return updated_book_json, 200
+        db.session.commit()
+        updated_book = db.session.get(Book, book_id)
+        updated_book_json = BookSchema(context={'user_id': user.id}).dump(updated_book)
+        return updated_book_json, 200
 
-    
     def delete(self, library_id, book_id):
-        user_id = session.get('user_id')
-        if not user_id:
+        user = get_current_user()
+        if not user:
             return {"error": "Unauthorized"}, 401
-        library = db.session.get(Library, library_id)
-        if not library or library.user_id != user_id:
-            return {"error": "Unauthorized"}, 401
+        library = get_library_by_id(library_id, require_owner=True)
+        if not library:
+            return {"error": "Unauthorized or library not found"}, 401
         library_book = LibraryBooks.query.filter_by(library_id=library_id, book_id=book_id).first()
         if not library_book:
             return {"error": "Library book association not found"}, 404

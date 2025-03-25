@@ -4,6 +4,8 @@ import { SessionContext } from '../App';
 
 function NavBar({ onLogout }) {
     const { isLoggedIn } = useContext(SessionContext);
+    const currentPath = window.location.pathname;
+    const hideAuthButton = currentPath === '/login';
     const navigate = useNavigate();
 
     const handleLogout = async () => {
@@ -32,10 +34,13 @@ function NavBar({ onLogout }) {
     return (
         <nav>
             <NavLink to="/" className="nav-link">Home</NavLink>
-            { isLoggedIn ? (
-                <button onClick={handleLogout}>Logout</button>
-            ) : (
-                <button onClick={handleLogin}>Login</button>
+            <NavLink to="/books" className="nav-link">Books</NavLink>
+            { !hideAuthButton && (
+                isLoggedIn ? (
+                    <button onClick={handleLogout}>Logout</button>
+                ) : (
+                    <button onClick={handleLogin}>Login</button>
+                )
             )}
         </nav>
     );

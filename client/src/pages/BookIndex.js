@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate, Link, Outlet } from 'react-router-dom';
 import BookCard from '../components/BookCard';
 import AutocompleteBookSelect from '../components/AutocompleteBookSelect';
+import { SessionContext } from '../App';
 
-function BookIndex({ loggedIn }) {
+function BookIndex() {
+  const { isLoggedIn } = useContext(SessionContext);
   const [books, setBooks] = useState([]);
   const [filteredBooks, setFilteredBooks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,13 +32,13 @@ function BookIndex({ loggedIn }) {
   }, []);
   
   useEffect(() => {
-    if (loggedIn) {
+    if (isLoggedIn) {
       fetch('http://localhost:5555/library', { credentials: 'include' })
         .then(response => response.json())
         .then(libs => setLibraries(libs))
         .catch(err => console.error("Error fetching libraries:", err));
     }
-  }, [loggedIn]);
+  }, [isLoggedIn]);
 
   // Function to filter books using AutocompleteBookSelect
   const handleFilter = (selectedBook) => {
@@ -86,21 +88,22 @@ function BookIndex({ loggedIn }) {
 
   return (
     <div className="books-page">
+      <Outlet />
       <h1>All Books</h1>
-      <AutocompleteBookSelect onChange={handleFilter} />
+      {!isLoggedIn && <AutocompleteBookSelect onChange={handleFilter} />}
       <div className="book-cards-container">
         {filteredBooks.map(book => (
           <div key={book.id}>
             <BookCard book={book} />
-            {loggedIn && !book.userRating && (
-              <button onClick={() => { setModalBook(book); setShowModal(true); console.log('modalBook set to', book); console.log('showModal set to true')}}>
+            {isLoggedIn && (
+              <button onClick={() => { setModalBook(book); setShowModal(true); console.log('modalBook set to', book); console.log('showModal set to true'); }}>
                 Add to Library
               </button>
             )}
           </div>
         ))}
       </div>
-      {loggedIn && (
+      {isLoggedIn && (
         <div className="add-library-section">
           <p>Don't see a book in your library? You can add it from here!</p>
         </div>
@@ -112,13 +115,20 @@ function BookIndex({ loggedIn }) {
             <p>Select a library:</p>
             {libraries.length > 0 ? (
               <ul>
-                {libraries.map(lib => (
-                  <li key={lib.id}>
-                    <button onClick={() => handleAddToLibrary(lib.id, modalBook)}>
-                      {lib.name}
-                    </button>
-                  </li>
-                ))}
+                {libraries.map(lib => {
+                  const alreadyAdded = lib.books && lib.books.some(b => b.id === modalBook.id);
+                  return (
+                    <li key={lib.id}>
+                      {alreadyAdded ? (
+                        <span>{lib.name} (Already added)</span>
+                      ) : (
+                        <button onClick={() => handleAddToLibrary(lib.id, modalBook)}>
+                          {lib.name}
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
               <p>You have no libraries. <Link to="/library/new">Create one</Link></p>

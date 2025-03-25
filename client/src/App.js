@@ -10,15 +10,15 @@ function App() {
 
   const checkSession = () => {
     fetch('http://localhost:5555/check_session', { credentials: 'include' })
-      .then(response => response.json())
-      .then(data => {
-        if (data && data.id) {
-          setIsLoggedIn(true);
-        } else {
-          setIsLoggedIn(false);
-        }
+      .then(response => {
+        console.log('response.ok:', response.ok);
+        setIsLoggedIn(response.ok);
+        return response.json();
       })
-      .catch(err => console.error('Session check error:', err));
+      .catch(err => {
+        console.error('Session check error:', err);
+        setIsLoggedIn(false);
+      });
   };
 
   useEffect(() => {

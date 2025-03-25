@@ -127,11 +127,9 @@ class BookSchema(ma.SQLAlchemySchema):
         return None
 
     def calculate_global_rating(self, obj):
-        user_id = self.context.get('user_id')
-        ratings = [lb.rating for lb in obj.library_books 
-                   if lb.rating is not None and (user_id is None or lb.library.user_id != user_id)]
+        ratings = [lb.rating for lb in obj.library_books if lb.rating is not None]
         if ratings:
-             return round(sum(ratings) / len(ratings), 2)
+            return round(sum(ratings) / len(ratings), 2)
         return None
 
     def calculate_review_score(self, obj):
