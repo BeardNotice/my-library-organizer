@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import BookCard from '../components/BookCard';
+import CreateLibraryModal from '../components/CreateLibrary';
 
 function Home() {
   const [libraryData, setLibraryData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showLibraryModal, setShowLibraryModal] = useState(false);
   const navigate = useNavigate();
   
-  const refreshLibraryData = () => {
+  const refreshLibraryData = useCallback(() => {
     fetch('http://localhost:5555/library', { credentials: 'include' })
       .then(response => {
         if (response.status === 401) {
@@ -28,11 +30,35 @@ function Home() {
       .finally(() => {
         setLoading(false);
       });
-  };
+  }, [navigate]);
   
   useEffect(() => {
     refreshLibraryData();
   }, [navigate]);
+
+  const deleteLibrary = (libraryId) => {
+    if (window.confirm('Are you sure you want to delete this library?')) {
+      fetch(`http://localhost:5555/library/${libraryId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Failed to delete library');
+          }
+          if (response.status === 204) {
+            return {};
+          }
+          return response.json();
+        })
+        .then(() => {
+          refreshLibraryData();
+        })
+        .catch(error => {
+          console.error('Error deleting library:', error);
+        });
+    }
+  };
 
   if (loading) {
     return <p>Loading your library...</p>;
@@ -48,6 +74,7 @@ function Home() {
             {library.books && library.books.length > 0 ? (
               <div className="book-list">
                 {library.books.map(book => {
+                  // Existing inline fetch for updating rating remains here.
                   const handleRating = (bookId, newRating) => {
                     fetch(`http://localhost:5555/library/${library.id}/books/${bookId}`, {
                       method: 'PUT',
@@ -78,25 +105,35 @@ function Home() {
               <p>No books found in this library.</p>
             )}
             <div className="button-group">
-              <Link to={`/books/new?libraryId=${library.id}`} className="btn">
+              {/* Replace Link with button to open modal */}
+              <button className="btn" onClick={() => setShowLibraryModal(true)}>
                 Add New Book
-              </Link>
+              </button>
+              <button className="btn delete-btn" onClick={() => deleteLibrary(library.id)}>
+                Delete Library
+              </button>
             </div>
           </div>
         ))
       ) : (
         <div className="button-group">
-          <Link to="/library/new" className="btn">
+          <button className="btn" onClick={() => setShowLibraryModal(true)}>
             Create Library
-          </Link>
+          </button>
         </div>
       )}
       {libraryData && libraryData.length > 0 && (
         <div className="button-group">
-          <Link to="/library/new" className="btn">
+          <button className="btn" onClick={() => setShowLibraryModal(true)}>
             Add Another Library
-          </Link>
+          </button>
         </div>
+      )}
+      {showLibraryModal && (
+        <CreateLibraryModal 
+          onClose={() => setShowLibraryModal(false)} 
+          onSuccess={refreshLibraryData} 
+        />
       )}
     </div>
   );

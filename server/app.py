@@ -131,6 +131,14 @@ class LibraryByID(Resource):
             return {"error": "Library not found"}, 404
         library_schema = LibrarySchema()
         return make_response(library_schema.dump(library), 200)
+    
+    def delete(self, id):
+        library = get_library_by_id(id, require_owner=True)
+        if not library:
+            return {"error": "Library not found or access unauthorized"}, 404
+        db.session.delete(library)
+        db.session.commit()
+        return {}, 204
 
 class LibraryBooksResource(Resource):
     def put(self, id):

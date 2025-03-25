@@ -1,8 +1,8 @@
 import React from "react";
 import {Formik, Form} from 'formik';
-import * as Yup from 'yup';
 import { useNavigate } from 'react-router-dom';
 import FormField from '../components/FormField';
+import { signupSchema } from '../components/ValidationSchema';
 
 function Signup(){
     const navigate = useNavigate()
@@ -12,12 +12,6 @@ function Signup(){
         email: '',
         password: ''
     };
-
-    const validationSchema = Yup.object({
-        username: Yup.string().required('Required'),
-        email: Yup.string().email('Invalid email format').required('Required'),
-        password: Yup.string().required('Requried')
-    });
 
     const onSubmit = (values, { setSubmitting, setErrors })=>{
         fetch('http://localhost:5555/signup', {
@@ -48,7 +42,7 @@ function Signup(){
     return (
         <div className="signup-container">
             <h1>Sign Up</h1>
-            <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={onSubmit}>
+            <Formik initialValues={initialValues} validationSchema={signupSchema} onSubmit={onSubmit}>
                 {formik => (
                     <Form>
                         <FormField label="Username" name="username" type="text" />

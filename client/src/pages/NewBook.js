@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Formik, Form } from 'formik';
-import * as Yup from 'yup';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import FormField from '../components/FormField';
 import AutocompleteBookSelect from '../components/AutocompleteBookSelect';
+import { newBookSchema } from '../components/ValidationSchema';
 
 function NewBook() {
   const [libraryId, setLibraryId] = useState(null);
@@ -42,23 +42,6 @@ function NewBook() {
     published_year: '',
     selectedBook: null
   };
-
-  const validationSchema = Yup.object({
-    title: Yup.string().when('selectedBook', (selectedBook, schema) =>
-      !selectedBook ? schema.required('Title is required') : schema
-    ),
-    author: Yup.string().when('selectedBook', (selectedBook, schema) =>
-      !selectedBook ? schema.required('Author is required') : schema
-    ),
-    genre: Yup.string(),
-    published_year: Yup.number()
-      .transform((value, originalValue) => originalValue === '' ? null : value)
-      .integer('Must be an integer')
-      .min(0, 'Invalid year')
-      .nullable(),
- 
-    selectedBook: Yup.object().nullable()
-  });
 
   const onSubmit = (values, { setSubmitting, setErrors }) => {
     if (!libraryId) {
@@ -118,7 +101,7 @@ function NewBook() {
       <h1>Add New Book</h1>
       <Formik
         initialValues={initialValues}
-        validationSchema={validationSchema}
+        validationSchema={newBookSchema}
         onSubmit={onSubmit}
       >
         {formik => (
