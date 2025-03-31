@@ -1,0 +1,70 @@
+/* Container for the entire Home page */
+.home-container {
+    margin: 20px auto;
+    padding: 20px;
+    max-width: 1200px;
+    font-family: Arial, sans-serif;
+    background-color: #f7f7f7;
+  }
+  
+  /* Style for each library section */
+  .library-section {
+    border: 1px solid #ccc;
+    background-color: #fff;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+  }
+  
+  /* Library title styling */
+  .library-section h2 {
+    margin-top: 0;
+  }
+  
+  /* Book list styling */
+  .book-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 10px;
+  }
+  
+  /* Button group styling */
+  .button-group {
+    margin-top: 15px;
+  }
+  
+  /* General button styling */
+  .btn {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 14px;
+    margin-right: 10px;
+    transition: background-color 0.3s ease;
+  }
+  
+  .btn:hover {
+    background-color: #0056b3;
+  }
+  
+  /* Delete button specific styling */
+  .delete-btn {
+    background-color: #dc3545;
+  }
+  
+  .delete-btn:hover {
+    background-color: #c82333;
+  }
+  
+  /* Cancel button specific styling */
+  .cancel-btn {
+    background-color: #6c757d;
+  }
+  
+  .cancel-btn:hover {
+    background-color: #5a6268;
+  }

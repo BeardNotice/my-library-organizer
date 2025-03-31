@@ -1,0 +1,17 @@
+
+/* Ensure the body takes up the full viewport with no margins */
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #e6f7ff; /* Light blue background */
+    font-family: Arial, sans-serif;
+  }
+  
+  /* Main container for your app, applied in App.js */
+  .app-container {
+    background-color: #e6f7ff; /* Matches the body background */
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }

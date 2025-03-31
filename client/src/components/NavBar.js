@@ -1,6 +1,7 @@
 import React, { useContext } from 'react';
 import { NavLink, useNavigate } from "react-router-dom";
 import { SessionContext } from '../App';
+import './NavBar.css';
 
 function NavBar({ onLogout }) {
     const { isLoggedIn } = useContext(SessionContext);
@@ -32,7 +33,7 @@ function NavBar({ onLogout }) {
     };
 
     return (
-        <nav>
+        <nav className="navbar">
             <NavLink to="/" className="nav-link">Home</NavLink>
             <NavLink to="/books" className="nav-link">Books</NavLink>
             { !hideAuthButton && (

@@ -1,6 +1,7 @@
 import React, { createContext, useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import NavBar from "./components/NavBar";
+import './App.css';
 
 export const SessionContext = createContext({ isLoggedIn: false, setIsLoggedIn: () => {} });
 
@@ -31,7 +32,6 @@ function App() {
         <NavBar />
       </header>
       <main>
-        <h1>My Library App</h1>
         <Outlet />
       </main>
     </SessionContext.Provider>

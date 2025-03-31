@@ -4,6 +4,7 @@ import BookCard from '../components/BookCard';
 import AutocompleteBookSelect from '../components/AutocompleteBookSelect';
 import { SessionContext } from '../App';
 import Modal from "../components/Modal";
+import './BookIndex.css';
 
 function BookIndex() {
   const { isLoggedIn } = useContext(SessionContext);
@@ -100,11 +101,6 @@ function BookIndex() {
           </div>
         ))}
       </div>
-      {isLoggedIn && (
-        <div className="add-library-section">
-          <p>Don't see a book in your library? You can add it from here!</p>
-        </div>
-      )}
 
       {showModal && modalBook && (
         <Modal onClose={() => { setShowModal(false); setModalBook(null); }}>

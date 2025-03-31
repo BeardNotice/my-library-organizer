@@ -1,14 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Formik, Form } from 'formik';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import FormField from '../components/FormField';
 import AutocompleteBookSelect from '../components/AutocompleteBookSelect';
 import { newBookSchema } from '../components/ValidationSchema';
+import { SessionContext } from '../App';
+//import './NewBook.css';
 
 function NewBook() {
+  const { isLoggedIn } = useContext(SessionContext);
   const [libraryId, setLibraryId] = useState(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigate('/login');
+    }
+  }, [isLoggedIn, navigate]);
 
   useEffect(() => {
     const queryLibraryId = searchParams.get('libraryId');
@@ -50,7 +59,6 @@ function NewBook() {
       return;
     }
 
-    // Build payload from form values
     let payload = { ...values };
     if (values.selectedBook) {
       payload.book_id = values.selectedBook.value;

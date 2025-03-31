@@ -1,0 +1,33 @@
+.navbar {
+    display: flex;
+    align-items: center;
+    background: #333;
+    padding: 10px 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar .nav-link {
+    color: #fff;
+    text-decoration: none;
+    margin-right: 20px;
+    font-size: 16px;
+    transition: color 0.3s ease;
+}
+
+.navbar .nav-link:hover {
+    color: #56ee90;
+}
+
+.navbar button {
+    background-color: #56ee90;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+.navbar button:hover {
+    background-color: #56ee90;
+}

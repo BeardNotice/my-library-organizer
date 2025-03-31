@@ -1,0 +1,37 @@
+/* Container for the login page */
+.login-container {
+    background-image: url('../assets/background.png');
+    background-size: cover;
+    background-position: center;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  
+  /* Login title styling */
+  .login-container h1 {
+    margin-bottom: 20px;
+    color: #333;
+  }
+  
+  /* Container for the login form */
+  .login-form-container {
+    max-width: 400px;
+    width: 100%;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin: 0 auto;
+  }
+  
+  /* Sign-up redirect styling */
+  .signup-redirect {
+    margin-top: 20px;
+    color: #333;
+    font-size: 14px;
+    text-align: center;
+  }

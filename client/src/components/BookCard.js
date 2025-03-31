@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
-import { Link } from 'react-router-dom';
 import { SessionContext } from '../App';
+import './BookCard.css'
 
 function StarRating({ rating, onRate }) {
   const [hover, setHover] = useState(0);
@@ -40,9 +40,6 @@ function BookCard({ book, onRate }) {
           />
         )}
       </div>
-      <Link to={`/books/${book.id}`} className="btn">
-        View Details
-      </Link>
     </div>
   );
 }
