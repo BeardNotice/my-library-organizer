@@ -1,7 +1,7 @@
-/* NewBook.css */
-
-/* Container for the entire new book page */
-.new-book-container {
+.new-book-container{
+  background: rgba(255, 255, 255, 0.85);
+}
+.new-book-container form{
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
     gap: 2rem;
@@ -9,7 +9,7 @@
     margin: 0 auto;
   }
   
-  /* Center the header so it spans all columns */
+
   .new-book-container h1 {
     grid-column: 1 / -1;
     justify-self: center;
@@ -17,13 +17,3 @@
     color: #333;
   }
   
-  /* On larger screens, arrange form fields in two columns */
-  @media (min-width: 768px) {
-    .new-book-container form {
-      grid-template-columns: 1fr 1fr;
-    }
-    /* Use this class on elements that should span both columns */
-    .new-book-container form .full-width {
-      grid-column: 1 / -1;
-    }
-  }

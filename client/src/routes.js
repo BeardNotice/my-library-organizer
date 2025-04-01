@@ -8,6 +8,7 @@ import BookIndex from './pages/BookIndex'
 import CreateLibrary from './components/CreateLibrary';
 import NewBook from './pages/NewBook';
 import ErrorPage from './pages/ErrorPage';
+import LibraryRedirect from './pages/LibraryRedirect';
 
 function AppRoutes() {
   return (
@@ -17,7 +18,7 @@ function AppRoutes() {
           <Route index element={<Home />} />
           <Route path="login" element={<Login />} />
           <Route path="signup" element={<Signup />} />
-          <Route path="library">
+          <Route path="library" element={<LibraryRedirect />}>
             <Route path="new" element={<CreateLibrary />} />
           </Route>
           <Route path="books" element={<BookIndex />}>

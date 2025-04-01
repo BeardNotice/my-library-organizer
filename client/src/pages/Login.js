@@ -53,13 +53,15 @@ function Login() {
         onSubmit={onSubmit}
       >
         {formik => (
-          <Form>
-            <FormField label="Username" name="username" type="text" />
-            <FormField label="Password" name="password" type="password" />
-            <button type="submit" disabled={formik.isSubmitting}>
-              Login
-            </button>
-          </Form>
+          <div className="login-form-container">
+            <Form>
+              <FormField label="Username" name="username" type="text" />
+              <FormField label="Password" name="password" type="password" />
+              <button type="submit" disabled={formik.isSubmitting}>
+                Login
+              </button>
+            </Form>
+          </div>
         )}
       </Formik>
       <div className="signup-redirect">

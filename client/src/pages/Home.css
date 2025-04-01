@@ -1,24 +1,33 @@
-/* Container for the entire Home page */
 .home-container {
-    margin: 20px auto;
+    background-image: url('../assets/background2.png');
+    background-size: cover;
+    background-position: center;
+    margin: 30px auto;
     padding: 20px;
     max-width: 1200px;
     font-family: Arial, sans-serif;
-    background-color: #f7f7f7;
+    background-color: #17383e;
   }
+.home-container h1 {
+  color: #c2c2c2;
   
-  /* Style for each library section */
+}
+  
   .library-section {
-    border: 1px solid #ccc;
-    background-color: #fff;
+    border: 1px solid #230d0d;
+    background-image: url('../assets/librarycase.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     padding: 15px;
     margin-bottom: 20px;
     border-radius: 4px;
   }
   
-  /* Library title styling */
   .library-section h2 {
+    color: #d8c4c4;
     margin-top: 0;
+    opacity: 1
   }
   
   /* Book list styling */

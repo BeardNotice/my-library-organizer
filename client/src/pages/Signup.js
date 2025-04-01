@@ -3,6 +3,7 @@ import {Formik, Form} from 'formik';
 import { useNavigate } from 'react-router-dom';
 import FormField from '../components/FormField';
 import { signupSchema } from '../components/ValidationSchema';
+import './Signup.css';
 
 function Signup(){
     const navigate = useNavigate()

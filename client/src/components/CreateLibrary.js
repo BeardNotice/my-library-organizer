@@ -1,10 +1,21 @@
-import React from 'react';
+import React, { useContext, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Formik, Form } from 'formik';
 import FormField from '../components/FormField';
 import { librarySchema } from '../components/ValidationSchema';
 import Modal from '../components/Modal';
+import { SessionContext } from '../App';
 
 function CreateLibraryModal({ onClose, onSuccess }) {
+  const { isLoggedIn } = useContext(SessionContext);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigate('/login');
+    }
+  }, [isLoggedIn, navigate]);
+
   const initialValues = {
     name: '',
     private: false

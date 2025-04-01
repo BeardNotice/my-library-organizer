@@ -5,7 +5,7 @@ import FormField from '../components/FormField';
 import AutocompleteBookSelect from '../components/AutocompleteBookSelect';
 import { newBookSchema } from '../components/ValidationSchema';
 import { SessionContext } from '../App';
-//import './NewBook.css';
+import './NewBook.css';
 
 function NewBook() {
   const { isLoggedIn } = useContext(SessionContext);

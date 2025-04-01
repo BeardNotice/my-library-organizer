@@ -1,8 +1,14 @@
-
-  /* Grid layout for displaying book cards */
   .book-cards-container {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
     gap: 2rem;
     margin-top: 20px;
+  }
+
+  .books-page {
+    background: url('../assets/infinitebooks.png')
+  }
+
+  .books-page h1{
+    color: #c2c2c2
   }
