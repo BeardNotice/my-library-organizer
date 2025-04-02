@@ -24,7 +24,7 @@ function NewBook() {
     if (queryLibraryId) {
       setLibraryId(queryLibraryId);
     } else {
-      fetch('http://localhost:5555/library', { credentials: 'include' })
+      fetch('/library', { credentials: 'include' })
         .then(response => {
           if (!response.ok) {
             throw new Error('Not authenticated or error fetching library');
@@ -79,7 +79,7 @@ function NewBook() {
 
     console.log('Payload being sent:', payload);
 
-    fetch(`http://localhost:5555/library/${libraryId}/books`, {
+    fetch(`/library/${libraryId}/books`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },

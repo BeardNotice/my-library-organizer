@@ -1,10 +1,11 @@
 .home-container {
+    min-height: 100vh;
     background-image: url('../assets/background2.png');
     background-size: cover;
     background-position: center;
-    margin: 30px auto;
+    /* margin: 30px auto; */
     padding: 20px;
-    max-width: 1200px;
+    /* max-width: 1200px; */
     font-family: Arial, sans-serif;
     background-color: #17383e;
   }

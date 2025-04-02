@@ -10,7 +10,7 @@ function App() {
   const location = useLocation();
 
   const checkSession = () => {
-    fetch('http://localhost:5555/check_session', { credentials: 'include' })
+    fetch('/check_session', { credentials: 'include' })
       .then(response => {
         console.log('response.ok:', response.ok);
         setIsLoggedIn(response.ok);

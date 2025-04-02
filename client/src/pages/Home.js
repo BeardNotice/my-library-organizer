@@ -16,7 +16,7 @@ function Home() {
   const navigate = useNavigate();
   
   const refreshLibraryData = useCallback(() => {
-    fetch('http://localhost:5555/library', { credentials: 'include' })
+    fetch('/library', { credentials: 'include' })
       .then(response => {
         if (response.status === 401) {
           navigate('/login');

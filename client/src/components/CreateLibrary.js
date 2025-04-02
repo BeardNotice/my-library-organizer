@@ -22,7 +22,7 @@ function CreateLibraryModal({ onClose, onSuccess }) {
   };
 
   const onSubmit = (values, { setSubmitting, setErrors }) => {
-    fetch('http://localhost:5555/library', {
+    fetch('/library', {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },

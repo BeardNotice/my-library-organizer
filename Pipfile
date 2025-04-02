@@ -20,6 +20,8 @@ marshmallow = "*"
 flask-marshmallow = "*"
 marshmallow-sqlalchemy = "*"
 honcho = "*"
+pipenv = "*"
+shell = "*"
 
 [requires]
 python_full_version = "3.8.13"

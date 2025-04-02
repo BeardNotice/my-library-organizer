@@ -15,7 +15,7 @@ function Signup(){
     };
 
     const onSubmit = (values, { setSubmitting, setErrors })=>{
-        fetch('http://localhost:5555/signup', {
+        fetch('/signup', {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },

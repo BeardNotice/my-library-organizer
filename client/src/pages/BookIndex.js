@@ -18,7 +18,7 @@ function BookIndex() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('http://localhost:5555/books', { credentials: 'include' })
+    fetch('/books', { credentials: 'include' })
       .then(response => response.json())
       .then(data => {
         console.log("Fetched books:", data);
