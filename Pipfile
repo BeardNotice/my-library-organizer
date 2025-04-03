@@ -23,6 +23,9 @@ honcho = "*"
 pipenv = "*"
 shell = "*"
 gunicorn = "*"
+psycopg2-binary = "*"
 
 [requires]
 python_full_version = "3.8.13"
+
+[dev-packages]
