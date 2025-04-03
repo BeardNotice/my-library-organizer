@@ -30,7 +30,7 @@ function StarRating({ rating, onRate }) {
   );
 }
 
-function BookCard({ book, onRate }) {
+function BookCard({ book, onRate, onDelete, libraryId, allowDelete = true }) {
   const { isLoggedIn } = useContext(SessionContext);
   const [style, setStyle] = useState({});
 
@@ -42,6 +42,26 @@ function BookCard({ book, onRate }) {
       color: text
     });
   }, [book.id]);
+
+
+  const handleDelete = () => {
+    if (window.confirm("Are you sure you want to delete this book?")) {
+      fetch(`/library/${libraryId}/books/${book.id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+      .then(response => {
+        if (response.ok) {
+          if (onDelete) {
+            onDelete(book.id);
+          }
+        } else {
+          console.error('Failed to delete the book.');
+        }
+      })
+      .catch(error => console.error("Error deleting book:", error));
+    }
+  };
 
   return (
     <div className="book-card" style = {{...style}}>
@@ -59,6 +79,9 @@ function BookCard({ book, onRate }) {
           />
         )}
       </div>
+      { isLoggedIn && allowDelete && (
+        <button onClick={handleDelete} className="delete-button">Delete Book</button>
+      )}
     </div>
   );
 }

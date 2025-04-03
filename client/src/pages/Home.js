@@ -44,7 +44,7 @@ function Home() {
 
   const deleteLibrary = (libraryId) => {
     if (window.confirm('Are you sure you want to delete this library?')) {
-      fetch(`http://localhost:5555/library/${libraryId}`, {
+      fetch(`/library/${libraryId}/books`, {
         method: 'DELETE',
         credentials: 'include'
       })
@@ -129,7 +129,7 @@ function Home() {
               <div className="book-list">
                 {library.books.map(book => {
                   const handleRating = (bookId, newRating) => {
-                    fetch(`http://localhost:5555/library/${library.id}/books/${bookId}`, {
+                    fetch(`/library/${library.id}/books/${bookId}`, {
                       method: 'PUT',
                       credentials: 'include',
                       headers: { 'Content-Type': 'application/json' },
@@ -150,7 +150,7 @@ function Home() {
                   };
 
                   return (
-                    <BookCard key={book.id} book={book} onRate={handleRating} />
+                    <BookCard key={book.id} book={book} onRate={handleRating} onDelete={() => refreshLibraryData()} libraryId={library.id} />
                   );
                 })}
               </div>

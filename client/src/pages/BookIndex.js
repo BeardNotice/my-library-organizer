@@ -51,7 +51,7 @@ function BookIndex() {
   };
 
   const handleAddToLibrary = (libraryId, book) => {
-    fetch(`http://localhost:5555/library/${libraryId}/books`, {
+    fetch(`/library/${libraryId}/books`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -92,7 +92,7 @@ function BookIndex() {
       <div className="book-cards-container">
         {filteredBooks.map(book => (
           <div key={book.id}>
-            <BookCard book={book} />
+            <BookCard book={book} allowDelete={false} />
             {isLoggedIn && (
               <button onClick={() => { setModalBook(book); setShowModal(true); }}>
                 Add to Library

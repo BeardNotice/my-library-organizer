@@ -132,13 +132,6 @@ class LibraryByID(Resource):
         library_schema = LibrarySchema()
         return make_response(library_schema.dump(library), 200)
     
-    def delete(self, id):
-        library = get_library_by_id(id, require_owner=True)
-        if not library:
-            return {"error": "Library not found or access unauthorized"}, 404
-        db.session.delete(library)
-        db.session.commit()
-        return {}, 204
 
 class LibraryBooksResource(Resource):
     def put(self, id):
@@ -154,13 +147,6 @@ class LibraryBooksResource(Resource):
         library_schema = LibrarySchema()
         return library_schema.dump(library), 200
     
-    def delete(self, id):
-        library = get_library_by_id(id)
-        if not library:
-            return {"error": "Library not found."}, 404
-        db.session.delete(library)
-        db.session.commit()
-        return {}, 204
 
     def get(self, id):
         library = get_library_by_id(id)
@@ -207,6 +193,14 @@ class LibraryBooksResource(Resource):
         db.session.commit()
         library_schema = LibrarySchema(context={'user_id': session.get('user_id')})
         return library_schema.dump(library), 201
+
+    def delete(self, id):
+        library = get_library_by_id(id, require_owner=True)
+        if not library:
+            return {"error": "Library not found or access unauthorized"}, 404
+        db.session.delete(library)
+        db.session.commit()
+        return {}, 204
     
 class LibraryBookReview(Resource):
     def put(self, library_id, book_id):

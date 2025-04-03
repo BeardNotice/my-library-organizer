@@ -16,7 +16,6 @@ import os
 
 # Instantiate app, set attributes
 app = Flask(__name__)
-# app.secret_key = b'cffccf6faa164a4896ad0b2efa28fe7d'
 load_dotenv()
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", 'cffccf6faa164a4896ad0b2efa28fe7d')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
@@ -37,6 +36,6 @@ bcrypt = Bcrypt(app)
 api = Api(app)
 
 # Instantiate CORS
-CORS(app, supports_credentials=True, origins=["http://localhost:5100"])
+CORS(app, supports_credentials=True)
 
 ma = Marshmallow(app)

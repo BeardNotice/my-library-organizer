@@ -117,6 +117,11 @@ class BookSchema(ma.SQLAlchemySchema):
     userRating = ma.Method('get_user_rating')
     review_score = ma.Method('calculate_review_score')
     globalRating = ma.Method('calculate_global_rating')
+    
+    @staticmethod
+    def get_average_rating(library_books):
+        ratings = [lb.rating for lb in library_books if lb.rating is not None]
+        return round(sum(ratings) / len(ratings), 2) if ratings else None
 
     def get_user_rating(self, obj):
         user_id = self.context.get('user_id')
@@ -127,15 +132,11 @@ class BookSchema(ma.SQLAlchemySchema):
         return None
 
     def calculate_global_rating(self, obj):
-        ratings = [lb.rating for lb in obj.library_books if lb.rating is not None]
-        if ratings:
-            return round(sum(ratings) / len(ratings), 2)
-        return None
+        return self.get_average_rating(obj.library_books)
 
     def calculate_review_score(self, obj):
-        all_ratings = [lb.rating for lb in obj.library_books if lb.rating is not None]
-        rating = sum(all_ratings) / len(all_ratings) if all_ratings else None
-        return round(rating, 2) if rating is not None else "not yet rated"
+        avg = self.get_average_rating(obj.library_books)
+        return avg if avg is not None else "not yet rated"
 
 class LibrarySchema(ma.SQLAlchemySchema):
     class Meta:
