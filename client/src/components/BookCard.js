@@ -46,7 +46,7 @@ function BookCard({ book, onRate, onDelete, libraryId, allowDelete = true }) {
 
   const handleDelete = () => {
     if (window.confirm("Are you sure you want to delete this book?")) {
-      fetch(`/library/${libraryId}/books/${book.id}`, {
+      fetch(`/api/library/${libraryId}/books/${book.id}`, {
         method: 'DELETE',
         credentials: 'include'
       })
