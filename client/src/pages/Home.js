@@ -16,7 +16,7 @@ function Home() {
   const navigate = useNavigate();
   
   const refreshLibraryData = useCallback(() => {
-    fetch('/library', { credentials: 'include' })
+    fetch('/api/library', { credentials: 'include' })
       .then(response => {
         if (response.status === 401) {
           navigate('/login');
@@ -44,7 +44,7 @@ function Home() {
 
   const deleteLibrary = (libraryId) => {
     if (window.confirm('Are you sure you want to delete this library?')) {
-      fetch(`/library/${libraryId}/books`, {
+      fetch(`/api/library/${libraryId}/books`, {
         method: 'DELETE',
         credentials: 'include'
       })
@@ -74,7 +74,7 @@ function Home() {
         <Formik
           initialValues={{ name: selectedLibrary.name }}
           onSubmit={(values, { setSubmitting }) => {
-            fetch(`http://localhost:5555/library/${selectedLibrary.id}/books`, {
+            fetch(`/api/library/${selectedLibrary.id}/books`, {
               method: 'PUT',
               credentials: 'include',
               headers: { 'Content-Type': 'application/json' },
@@ -129,7 +129,7 @@ function Home() {
               <div className="book-list">
                 {library.books.map(book => {
                   const handleRating = (bookId, newRating) => {
-                    fetch(`/library/${library.id}/books/${bookId}`, {
+                    fetch(`/api/library/${library.id}/books/${bookId}`, {
                       method: 'PUT',
                       credentials: 'include',
                       headers: { 'Content-Type': 'application/json' },

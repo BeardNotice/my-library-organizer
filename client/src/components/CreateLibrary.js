@@ -22,7 +22,7 @@ function CreateLibraryModal({ onClose, onSuccess }) {
   };
 
   const onSubmit = (values, { setSubmitting, setErrors }) => {
-    fetch('/library', {
+    fetch('/api/library', {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },

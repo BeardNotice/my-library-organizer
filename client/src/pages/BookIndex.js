@@ -34,7 +34,7 @@ function BookIndex() {
   
   useEffect(() => {
     if (isLoggedIn) {
-      fetch('http://localhost:5555/library', { credentials: 'include' })
+      fetch('/library', { credentials: 'include' })
         .then(response => response.json())
         .then(libs => setLibraries(libs))
         .catch(err => console.error("Error fetching libraries:", err));
