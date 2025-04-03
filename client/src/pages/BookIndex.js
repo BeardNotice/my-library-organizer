@@ -34,7 +34,7 @@ function BookIndex() {
   
   useEffect(() => {
     if (isLoggedIn) {
-      fetch('/library', { credentials: 'include' })
+      fetch('/api/library', { credentials: 'include' })
         .then(response => response.json())
         .then(libs => setLibraries(libs))
         .catch(err => console.error("Error fetching libraries:", err));
@@ -51,7 +51,7 @@ function BookIndex() {
   };
 
   const handleAddToLibrary = (libraryId, book) => {
-    fetch(`/library/${libraryId}/books`, {
+    fetch(`/api/library/${libraryId}/books`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -124,7 +124,7 @@ function BookIndex() {
               })}
             </ul>
           ) : (
-            <p>You have no libraries. <Link to="/library/new">Create one</Link></p>
+            <p>You have no libraries. <Link to="/api/library/new">Create one</Link></p>
           )}
           <button onClick={() => setShowModal(false)}>Cancel</button>
         </Modal>
