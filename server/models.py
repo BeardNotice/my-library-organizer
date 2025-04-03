@@ -154,12 +154,14 @@ class LibrarySchema(ma.SQLAlchemySchema):
     #     data.books = [book for book in data.books if isinstance(book, Book)]
     #     return data
 
-class LibraryBooksSchema(ma.SQLAlchemySchema):
-    class Meta:
-        model = LibraryBooks
-        load_instance = True
+#no longer used
 
-    library_id = ma.auto_field()
-    book_id = ma.auto_field()
-    rating = ma.auto_field()
-    book = ma.Nested(BookSchema(only=("id", "title", "author", "genre")))
+# class LibraryBooksSchema(ma.SQLAlchemySchema):
+#     class Meta:
+#         model = LibraryBooks
+#         load_instance = True
+
+#     library_id = ma.auto_field()
+#     book_id = ma.auto_field()
+#     rating = ma.auto_field()
+#     book = ma.Nested(BookSchema(only=("id", "title", "author", "genre")))

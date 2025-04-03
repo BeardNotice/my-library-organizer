@@ -1,7 +1,7 @@
 # Standard library imports
 
 # Remote library imports
-from flask import Flask
+from flask import Flask, render_template
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_restful import Api
@@ -15,12 +15,12 @@ from dotenv import load_dotenv
 import os
 
 # Instantiate app, set attributes
+load_dotenv()
 app = Flask(__name__,
             static_url_path='',
             static_folder='../client/build',
             template_folder='../client/build'
             )
-load_dotenv()
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", 'cffccf6faa164a4896ad0b2efa28fe7d')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -43,3 +43,7 @@ api = Api(app)
 CORS(app, supports_credentials=True)
 
 ma = Marshmallow(app)
+
+@app.errorhandler(404)
+def not_found(e):
+    return render_template("index.html")

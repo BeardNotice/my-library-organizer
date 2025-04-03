@@ -8,9 +8,9 @@ from flask_restful import Resource
 from sqlalchemy.exc import IntegrityError
 
 # Local imports
-from config import app, db, api, ma
+from config import app, db, api
 # Add your model imports
-from models import User, Library, Book, LibraryBooks, UserSchema, LibrarySchema, BookSchema, LibraryBooksSchema
+from models import User, Library, Book, LibraryBooks, UserSchema, LibrarySchema, BookSchema
 
 def get_current_user():
     return User.query.get(session.get('user_id'))
@@ -32,10 +32,15 @@ def login_check():
     
     if request.method =='OPTIONS':
         return
-    open_access_list = ['signup', 'login', 'check_session', 'books']
+    open_access_list = ['signup', 'login', 'check_session', 'books', 'index', 'static']
 
     if (request.endpoint) not in open_access_list and (not session.get('user_id')):
         return {'error': '401 unauthorized'}, 401
+    
+class Index(Resource):
+    def get(self):
+        return app.send_static_file('index.html')
+
 
 class Signup(Resource):
     def post(self):
@@ -259,6 +264,7 @@ class BooksIndex(Resource):
         book_schema = BookSchema(many=True, context={'user_id': user_id})
         return book_schema.dump(books), 200
 
+api.add_resource(Index, "/")
 api.add_resource(Signup, "/api/signup", endpoint='signup')
 api.add_resource(Login, "/api/login", endpoint='login')
 api.add_resource(Logout, '/logout', endpoint='logout')
