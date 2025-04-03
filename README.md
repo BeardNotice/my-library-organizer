@@ -56,13 +56,13 @@ The following sections describe each important file in the project and their key
 ├── Pipfile.lock                            // Locked dependencies for reproducibility.
 ├── README.md                               // (This file) Contains project overview and file-by-file documentation.
 ├── requirements.txt                        // Additional dependency listings.
+├── Procfile                                // Contains deployment instructions for the Flask backend and React frontend using Gunicorn. (Located at the project root.)
 └── server
     ├── app.py                              // Main Flask application file with API endpoints for authentication, library CRUD operations, book management, and reviews. Each function (such as signup, login, and delete) includes inline commentary on its role.
     ├── config.py                           // Configures the Flask app (database URI, secret key, CORS, migrations, etc.) and initializes key extensions like SQLAlchemy, Marshmallow, and Flask-Bcrypt.
     ├── instance                            // Contains instance-specific configurations (not typically edited by end users).
     ├── migrations                          // Auto-generated files for database migrations (can be ignored for manual edits).
     ├── models.py                           // Defines the SQLAlchemy models (User, Library, Book, LibraryBooks) including relationships, validations, and helper methods (like password hashing in the User model).
-    ├── Procfile                            // Contains deployment instructions, specifying how to run both the server and client.
     └── seed.py                             // A script to seed the database with initial data for testing and development.
 ```
 
@@ -83,7 +83,7 @@ Models are defined here using SQLAlchemy. The User, Library, Book, and LibraryBo
 This script seeds your database with initial data, which is useful for testing and development. It creates initial users, libraries, and books so that you have a starting point to interact with your application.
 
 # Procfile
-The Procfile provides instructions for deployment, specifically how to run both the Flask backend and the React frontend. This is particularly useful when deploying the application to platforms like Render or Heroku.
+This file, located at the project root, provides instructions for deployment, specifying how to run both the Flask backend and the React frontend using Gunicorn. This is particularly useful when deploying the application to platforms like Render or Heroku.
 
 ## Client Files
 

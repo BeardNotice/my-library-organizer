@@ -1,2 +1,0 @@
-web: python app.py
-client: npm start --prefix ../client

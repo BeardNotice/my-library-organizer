@@ -15,7 +15,7 @@ function Signup(){
     };
 
     const onSubmit = (values, { setSubmitting, setErrors })=>{
-        fetch('/signup', {
+        fetch('/api/signup', {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },

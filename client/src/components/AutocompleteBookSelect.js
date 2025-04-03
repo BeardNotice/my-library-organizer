@@ -5,7 +5,7 @@ function AutocompleteBookSelect({ onChange }) {
     const [options, setOptions] = useState([]);
 
     useEffect(() => {
-        fetch('/books', { credentials: 'include' })
+        fetch('/api/books', { credentials: 'include' })
         .then(response=>response.json())
         .then(data => {
             const opts = data.map(book=>({ value: book.id, label: book.title }));

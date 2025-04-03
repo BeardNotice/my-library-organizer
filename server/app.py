@@ -259,14 +259,14 @@ class BooksIndex(Resource):
         book_schema = BookSchema(many=True, context={'user_id': user_id})
         return book_schema.dump(books), 200
 
-api.add_resource(Signup, "/signup", endpoint='signup')
-api.add_resource(Login, "/login", endpoint='login')
+api.add_resource(Signup, "/api/signup", endpoint='signup')
+api.add_resource(Login, "/api/login", endpoint='login')
 api.add_resource(Logout, '/logout', endpoint='logout')
 api.add_resource(CheckSession, "/check_session", endpoint="check_session")
 api.add_resource(LibraryIndex, "/library", endpoint="library")
 api.add_resource(LibraryByID, "/library/<int:id>")
 api.add_resource(LibraryBooksResource, "/library/<int:id>/books")
 api.add_resource(LibraryBookReview, "/library/<int:library_id>/books/<int:book_id>")
-api.add_resource(BooksIndex, "/books", endpoint="books")
+api.add_resource(BooksIndex, "/api/books", endpoint="books")
 if __name__ == '__main__':
     app.run(port=5555, debug=True)

@@ -18,7 +18,7 @@ function BookIndex() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('/books', { credentials: 'include' })
+    fetch('/api/books', { credentials: 'include' })
       .then(response => response.json())
       .then(data => {
         console.log("Fetched books:", data);
