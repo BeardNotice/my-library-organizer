@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import { useContext } from 'react';
 import { NavLink, useNavigate } from "react-router-dom";
 import { SessionContext } from '../App';
 import './NavBar.css';
