@@ -44,7 +44,7 @@ function Home() {
 
   const deleteLibrary = (libraryId) => {
     if (window.confirm('Are you sure you want to delete this library?')) {
-      fetch(`/api/library/${libraryId}/books`, {
+    fetch(`/api/library/${libraryId}`, {
         method: 'DELETE',
         credentials: 'include'
       })
@@ -66,6 +66,34 @@ function Home() {
     }
   };
 
+  const handleRating = (libraryId, bookId, newRating) => {
+    fetch(`/api/library/${libraryId}/books/${bookId}`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rating: newRating })
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to update rating');
+        return res.json();
+      })
+      .then(updatedBook => {
+        setLibraryData(prev =>
+          prev.map(lib =>
+            lib.id === libraryId
+              ? {
+                  ...lib,
+                  books: lib.books.map(book =>
+                    book.id === bookId ? { ...book, ...updatedBook } : book
+                  )
+                }
+              : lib
+          )
+        );
+      })
+      .catch(err => console.error('Rating update error:', err));
+  };
+
   const renderUpdateModal = () => {
     if (!showUpdateModal || !selectedLibrary) return null;
     return (
@@ -74,7 +102,7 @@ function Home() {
         <Formik
           initialValues={{ name: selectedLibrary.name }}
           onSubmit={(values, { setSubmitting }) => {
-            fetch(`/api/library/${selectedLibrary.id}/books`, {
+            fetch(`/api/library/${selectedLibrary.id}`, {
               method: 'PUT',
               credentials: 'include',
               headers: { 'Content-Type': 'application/json' },
@@ -127,32 +155,15 @@ function Home() {
             <h2>{library.name}</h2>
             {library.books && library.books.length > 0 ? (
               <div className="book-list">
-                {library.books.map(book => {
-                  const handleRating = (bookId, newRating) => {
-                    fetch(`/api/library/${library.id}/books/${bookId}`, {
-                      method: 'PUT',
-                      credentials: 'include',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ rating: newRating })
-                    })
-                      .then(response => {
-                        if (!response.ok) {
-                          throw new Error('Failed to update rating');
-                        }
-                        return response.json();
-                      })
-                      .then(() => {
-                        refreshLibraryData();
-                      })
-                      .catch(error => {
-                        console.error('Error updating rating:', error);
-                      });
-                  };
-
-                  return (
-                    <BookCard key={book.id} book={book} onRate={handleRating} onDelete={() => refreshLibraryData()} libraryId={library.id} />
-                  );
-                })}
+                {library.books.map(book => (
+                    <BookCard 
+                      key={book.id} 
+                      book={book} 
+                      onRate={(bookId, newRating) => handleRating(library.id, bookId, newRating)}
+                      onDelete={refreshLibraryData} 
+                      libraryId={library.id} 
+                    />
+                ))}
               </div>
             ) : (
               <p>No books found in this library.</p>
