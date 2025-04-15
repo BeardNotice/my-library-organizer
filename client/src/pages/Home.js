@@ -59,7 +59,7 @@ function Home() {
           return response.json();
         })
         .then(() => {
-          refreshLibraryData();
+          setLibraryData(prev => prev.filter(lib => lib.id !== libraryId));
         })
         .catch(error => {
           console.error('Error deleting library:', error);
@@ -112,8 +112,10 @@ function Home() {
                 }
                 return response.json();
               })
-              .then(() => {
-                refreshLibraryData();
+              .then((updatedLibrary) => {
+                setLibraryData(prev => prev.map(lib =>
+                  lib.id === updatedLibrary.id ? updatedLibrary : lib
+                ));
                 setShowUpdateModal(false);
               })
               .catch(error => {
@@ -158,7 +160,15 @@ function Home() {
                       key={book.id} 
                       book={book} 
                       onRate={(bookId, newRating) => handleRating(library.id, bookId, newRating)}
-                      onDelete={refreshLibraryData} 
+                      onDelete={(bookId) => {
+                        setLibraryData(prev => prev.map(lib => {
+                          if (lib.id !== library.id) return lib;
+                          return {
+                            ...lib,
+                            books: lib.books.filter(book => book.id !== bookId)
+                          };
+                        }));
+                      }} 
                       libraryId={library.id} 
                     />
                 ))}
@@ -197,7 +207,10 @@ function Home() {
       {showLibraryModal && (
         <CreateLibraryModal 
           onClose={() => setShowLibraryModal(false)} 
-          onSuccess={refreshLibraryData} 
+          onSuccess={(newLibrary) => {
+            const updatedLibraries = libraryData ? [...libraryData, newLibrary] : [newLibrary];
+            setLibraryData(updatedLibraries);
+          }} 
         />
       )}
     </div>

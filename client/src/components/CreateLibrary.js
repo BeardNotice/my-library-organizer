@@ -30,10 +30,6 @@ function CreateLibraryModal({ onClose, onSuccess }) {
     })
       .then(response => {
         if (response.ok) {
-          if (onSuccess) {
-            onSuccess();
-          }
-          onClose();
           return response.json();
         } else {
           return response.json().then(data => {
@@ -41,6 +37,13 @@ function CreateLibraryModal({ onClose, onSuccess }) {
             throw new Error('Library creation failed');
           });
         }
+      })
+      .then(data => {
+        if (onSuccess) {
+          onSuccess(data); // Pass the new library to the parent
+        }
+        onClose();
+        return data;
       })
       .catch(error => {
         console.error('Error creating library:', error);

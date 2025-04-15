@@ -204,7 +204,6 @@ class LibraryBookReview(Resource):
         user = get_current_user()
         if not user:
             return {"error": "Unauthorized"}, 401
-        # Confirm that the specified library is owned by the current user
         library = Library.query.filter_by(id=library_id, user_id=user.id).first()
         if not library:
             return {"error": "Unauthorized or library not found"}, 404
