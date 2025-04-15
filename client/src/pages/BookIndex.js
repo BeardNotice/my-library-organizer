@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { LibraryContext } from '../App';
 import { useNavigate, Link, Outlet } from 'react-router-dom';
 import BookCard from '../components/BookCard';
 import AutocompleteBookSelect from '../components/AutocompleteBookSelect';
@@ -11,7 +12,7 @@ function BookIndex() {
   const [books, setBooks] = useState([]);
   const [filteredBooks, setFilteredBooks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [libraries, setLibraries] = useState([]);
+  const { libraries } = useContext(LibraryContext);
   const [showModal, setShowModal] = useState(false);
   const [modalBook, setModalBook] = useState(null);
   const [addedMessage, setAddedMessage] = useState(null);
@@ -32,14 +33,7 @@ function BookIndex() {
       });
   }, []);
   
-  useEffect(() => {
-    if (isLoggedIn) {
-      fetch('/api/library', { credentials: 'include' })
-        .then(response => response.json())
-        .then(libs => setLibraries(libs))
-        .catch(err => console.error("Error fetching libraries:", err));
-    }
-  }, [isLoggedIn]);
+  
 
   const handleFilter = (selectedBook) => {
     if (selectedBook) {

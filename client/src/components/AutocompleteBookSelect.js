@@ -1,21 +1,25 @@
-import React, {useEffect, useState } from 'react';
+import React, { useContext } from 'react';
 import Select from 'react-select';
+import { BookDataContext } from '../App';
 
 function AutocompleteBookSelect({ onChange }) {
-    const [options, setOptions] = useState([]);
+  const { books } = useContext(BookDataContext);
 
-    useEffect(() => {
-        fetch('/api/books', { credentials: 'include' })
-        .then(response=>response.json())
-        .then(data => {
-            const opts = data.map(book=>({ value: book.id, label: book.title }));
-            setOptions(opts);
-        })
-        .catch(error => console.error('Error fetching books:', error));
-    }, []);
+  const options = books.map(book => ({
+    value: book.id,
+    label: book.title,
+    author: book.author
+  }));
 
-    return (<Select options={options} onChange={onChange} placeholder="Select a book..." isClearable isSearchable />
-    );
+  return (
+    <Select
+      options={options}
+      onChange={onChange}
+      placeholder="Select a book..."
+      isClearable
+      isSearchable
+    />
+  );
 }
 
-export default AutocompleteBookSelect
+export default AutocompleteBookSelect;

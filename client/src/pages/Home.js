@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
+import { LibraryContext } from '../App';
 import { useNavigate } from 'react-router-dom';
 import BookCard from '../components/BookCard';
 import CreateLibraryModal from '../components/CreateLibrary';
@@ -9,39 +10,13 @@ import { librarySchema } from '../components/ValidationSchema';
 import './Home.css'
 
 function Home() {
-  const [libraryData, setLibraryData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { libraries: libraryData, setLibraries: setLibraryData } = useContext(LibraryContext);
   const [showLibraryModal, setShowLibraryModal] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [selectedLibrary, setSelectedLibrary] = useState(null);
   const navigate = useNavigate();
   
-  const refreshLibraryData = useCallback(() => {
-    fetch('/api/library', { credentials: 'include' })
-      .then(response => {
-        if (response.status === 401) {
-          navigate('/login');
-          throw new Error('Not authenticated');
-        }
-        if (!response.ok) {
-          throw new Error('Error fetching library');
-        }
-        return response.json();
-      })
-      .then(data => {
-        setLibraryData(data);
-      })
-      .catch(error => {
-        console.error('Error fetching library data:', error);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [navigate]);
   
-  useEffect(() => {
-    refreshLibraryData();
-  }, [refreshLibraryData]);
 
   const deleteLibrary = (libraryId) => {
     if (window.confirm('Are you sure you want to delete this library?')) {
@@ -142,9 +117,6 @@ function Home() {
     );
   };
 
-  if (loading) {
-    return <p>Loading your library...</p>;
-  }
 
   return (
     <div className="home-container">

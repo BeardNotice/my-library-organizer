@@ -23,7 +23,7 @@ function NewBook() {
     const queryLibraryId = searchParams.get('libraryId');
     if (queryLibraryId) {
       setLibraryId(queryLibraryId);
-    } else {
+    } else if (!libraryId) {
       fetch('/api/library', { credentials: 'include' })
         .then(response => {
           if (!response.ok) {
@@ -42,7 +42,7 @@ function NewBook() {
           console.error('Error fetching library:', error);
         });
     }
-  }, [searchParams]);
+  }, [searchParams, libraryId]);
 
   const initialValues = {
     title: '',
