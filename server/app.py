@@ -129,14 +129,6 @@ class LibraryIndex(Resource):
         except IntegrityError:
             return {'error': "422 Unprocessable Entity"}, 422
 
-class LibraryByID(Resource):
-    def get(self, id):
-        library = get_library_by_id(id)
-        if not library:
-            return {"error": "Library not found"}, 404
-        library_schema = LibrarySchema()
-        return make_response(library_schema.dump(library), 200)
-    
 
 class LibraryBooksResource(Resource):
     def put(self, id):
@@ -158,8 +150,8 @@ class LibraryBooksResource(Resource):
         if not library:
             return {"error": "Library not found"}, 404
 
-        book_schema = BookSchema(many=True)
-        return book_schema.dump(library.books), 200
+        library_schema = LibrarySchema()
+        return make_response(library_schema.dump(library), 200)
     
     def post(self, id):
         library = get_library_by_id(id)
@@ -212,9 +204,6 @@ class LibraryBookReview(Resource):
         user = get_current_user()
         if not user:
             return {"error": "Unauthorized"}, 401
-        library = get_library_by_id(library_id, require_owner=True)
-        if not library:
-            return {"error": "Unauthorized or library not found"}, 401
         data = request.get_json()
         try:
             rating = int(data.get("rating"))
@@ -231,7 +220,7 @@ class LibraryBookReview(Resource):
         ).all()
         if not library_books:
             return {"error": "No library associations found for this book for the current user"}, 404
-        
+
         for lb in library_books:
             lb.rating = rating
 
@@ -270,7 +259,7 @@ api.add_resource(Login, "/api/login", endpoint='login')
 api.add_resource(Logout, '/logout', endpoint='logout')
 api.add_resource(CheckSession, "/check_session", endpoint="check_session")
 api.add_resource(LibraryIndex, "/api/library", endpoint="library")
-api.add_resource(LibraryByID, "/api/library/<int:id>")
+## Removed LibraryByID resource; its functionality is now handled by LibraryBooksResource
 api.add_resource(LibraryBooksResource, "/api/library/<int:id>/books")
 api.add_resource(LibraryBookReview, "/api/library/<int:library_id>/books/<int:book_id>")
 api.add_resource(BooksIndex, "/api/books", endpoint="books")

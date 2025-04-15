@@ -5,6 +5,7 @@ import CreateLibraryModal from '../components/CreateLibrary';
 import { Formik, Form } from 'formik';
 import Modal from '../components/Modal';
 import FormField from '../components/FormField';
+import { librarySchema } from '../components/ValidationSchema';
 import './Home.css'
 
 function Home() {
@@ -44,7 +45,7 @@ function Home() {
 
   const deleteLibrary = (libraryId) => {
     if (window.confirm('Are you sure you want to delete this library?')) {
-    fetch(`/api/library/${libraryId}`, {
+    fetch(`/api/library/${libraryId}/books`, {
         method: 'DELETE',
         credentials: 'include'
       })
@@ -79,16 +80,12 @@ function Home() {
       })
       .then(updatedBook => {
         setLibraryData(prev =>
-          prev.map(lib =>
-            lib.id === libraryId
-              ? {
-                  ...lib,
-                  books: lib.books.map(book =>
-                    book.id === bookId ? { ...book, ...updatedBook } : book
-                  )
-                }
-              : lib
-          )
+          prev.map(lib => ({
+            ...lib,
+            books: lib.books.map(book =>
+              book.id === bookId ? { ...book, ...updatedBook } : book
+            )
+          }))
         );
       })
       .catch(err => console.error('Rating update error:', err));
@@ -101,8 +98,9 @@ function Home() {
         <h2>Update Library Name</h2>
         <Formik
           initialValues={{ name: selectedLibrary.name }}
+          validationSchema={librarySchema}
           onSubmit={(values, { setSubmitting }) => {
-            fetch(`/api/library/${selectedLibrary.id}`, {
+            fetch(`/api/library/${selectedLibrary.id}/books`, {
               method: 'PUT',
               credentials: 'include',
               headers: { 'Content-Type': 'application/json' },
@@ -169,7 +167,7 @@ function Home() {
               <p>No books found in this library.</p>
             )}
             <div className="button-group">
-              <button className="btn" onClick={() => navigate('/books/new')}>
+              <button className="btn" onClick={() => navigate(`/books/new?libraryId=${library.id}`)}>
                 Add New Book
               </button>
               <button className="btn delete-btn" onClick={() => deleteLibrary(library.id)}>
