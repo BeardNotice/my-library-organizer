@@ -3,16 +3,17 @@ import { LibraryContext } from '../App';
 import { useNavigate, Link, Outlet } from 'react-router-dom';
 import BookCard from '../components/BookCard';
 import AutocompleteBookSelect from '../components/AutocompleteBookSelect';
-import { SessionContext } from '../App';
+import { SessionContext, BookDataContext } from '../App';
 import Modal from "../components/Modal";
 import './BookIndex.css';
 
 function BookIndex() {
   const { isLoggedIn } = useContext(SessionContext);
+  const { setBooks: setGlobalBooks } = useContext(BookDataContext);
   const [books, setBooks] = useState([]);
   const [filteredBooks, setFilteredBooks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { libraries } = useContext(LibraryContext);
+  const { libraries, setLibraries } = useContext(LibraryContext);
   const [showModal, setShowModal] = useState(false);
   const [modalBook, setModalBook] = useState(null);
   const [addedMessage, setAddedMessage] = useState(null);
@@ -66,6 +67,13 @@ function BookIndex() {
          );
          setBooks(updateBooks);
          setFilteredBooks(updateBooks);
+         setGlobalBooks(updateBooks);
+         const updatedLibrary = libraries.map(lib =>
+           lib.id === libraryId
+             ? { ...lib, books: [...lib.books, addedBook] }
+             : lib
+         );
+         setLibraries(updatedLibrary);
          const selectedLibrary = libraries.find(lib => lib.id === libraryId);
          setAddedMessage(`Book added to ${selectedLibrary.name}`);
          setShowModal(false);

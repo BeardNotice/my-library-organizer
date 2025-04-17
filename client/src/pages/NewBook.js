@@ -4,11 +4,12 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import FormField from '../components/FormField';
 import AutocompleteBookSelect from '../components/AutocompleteBookSelect';
 import { newBookSchema } from '../components/ValidationSchema';
-import { SessionContext } from '../App';
+import { SessionContext, LibraryContext } from '../App';
 import './NewBook.css';
 
 function NewBook() {
   const { isLoggedIn } = useContext(SessionContext);
+  const { libraries, setLibraries } = useContext(LibraryContext);
   const [libraryId, setLibraryId] = useState(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -23,6 +24,8 @@ function NewBook() {
     const queryLibraryId = searchParams.get('libraryId');
     if (queryLibraryId) {
       setLibraryId(queryLibraryId);
+    } else if (!libraryId && libraries.length > 0) {
+      setLibraryId(libraries[0].id);
     } else if (!libraryId) {
       fetch('/api/library', { credentials: 'include' })
         .then(response => {
@@ -87,8 +90,13 @@ function NewBook() {
     })
       .then(response => {
         if (response.ok) {
-          navigate('/');
-          return response.json();
+          return response.json().then(updatedLibrary => {
+            setLibraries(prev => prev.map(lib =>
+              lib.id === updatedLibrary.id ? updatedLibrary : lib
+            ));
+            navigate('/');
+            return updatedLibrary;
+          });
         } else {
           return response.json().then(data => {
             setErrors({ title: data.error || 'Error adding book' });

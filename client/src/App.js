@@ -9,6 +9,7 @@ export const BookDataContext = createContext({ books: [], setBooks: () => {} });
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isSessionChecked, setIsSessionChecked] = useState(false);
   const [libraries, setLibraries] = useState([]);
   const [books, setBooks] = useState([]);
   const location = useLocation();
@@ -17,11 +18,15 @@ function App() {
     fetch('/check_session', { credentials: 'include' })
       .then(response => {
         setIsLoggedIn(response.ok);
+        if (!response.ok) return null;
         return response.json();
       })
       .catch(err => {
         console.error('Session check error:', err);
         setIsLoggedIn(false);
+      })
+      .finally(() => {
+        setIsSessionChecked(true);
       });
   };
 
@@ -42,6 +47,10 @@ function App() {
         .catch(err => console.error("Failed to fetch books:", err));
     }
   }, [isLoggedIn]);
+
+  if (!isSessionChecked) {
+    return <p>Loading...</p>;
+  }
 
   return (
     <SessionContext.Provider value={{ isLoggedIn, setIsLoggedIn }}>

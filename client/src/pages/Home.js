@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react';
-import { LibraryContext } from '../App';
+import { LibraryContext, SessionContext } from '../App';
 import { useNavigate } from 'react-router-dom';
 import BookCard from '../components/BookCard';
 import CreateLibraryModal from '../components/CreateLibrary';
@@ -11,10 +11,17 @@ import './Home.css'
 
 function Home() {
   const { libraries: libraryData, setLibraries: setLibraryData } = useContext(LibraryContext);
+  const { isLoggedIn } = useContext(SessionContext);
   const [showLibraryModal, setShowLibraryModal] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [selectedLibrary, setSelectedLibrary] = useState(null);
   const navigate = useNavigate();
+  
+  useEffect(() => {
+    if (isLoggedIn === false) {
+      navigate('/login');
+    }
+  }, [isLoggedIn, navigate]);
   
   
 
@@ -130,7 +137,7 @@ function Home() {
                 {library.books.map(book => (
                     <BookCard 
                       key={book.id} 
-                      book={book} 
+                      book={{ ...book, libraryId: library.id }} 
                       onRate={(bookId, newRating) => handleRating(library.id, bookId, newRating)}
                       onDelete={(bookId) => {
                         setLibraryData(prev => prev.map(lib => {
@@ -141,7 +148,6 @@ function Home() {
                           };
                         }));
                       }} 
-                      libraryId={library.id} 
                     />
                 ))}
               </div>
