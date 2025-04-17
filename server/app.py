@@ -13,11 +13,11 @@ from config import app, db, api
 from models import User, Library, Book, LibraryBooks, UserSchema, LibrarySchema, BookSchema
 
 def get_current_user():
-    return User.query.get(session.get('user_id'))
+    return db.session.get(User, session.get('user_id'))
 
 def get_library_by_id(library_id, require_owner=False):
     """Fetch a library by ID. If require_owner is True, ensure the current user owns the library."""
-    library = Library.query.get(library_id)
+    library = db.session.get(Library, library_id)
     if not library:
         return None
     if library.private and library.user_id != session.get('user_id'):
