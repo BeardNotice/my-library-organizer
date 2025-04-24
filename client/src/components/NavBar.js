@@ -1,24 +1,23 @@
-import { useContext } from 'react';
+import React, { useContext } from 'react';
 import { NavLink, useNavigate } from "react-router-dom";
-import { SessionContext } from '../App';
+import { SessionContext } from '../index';
 import './NavBar.css';
 
 function NavBar({ onLogout }) {
-    const { isLoggedIn } = useContext(SessionContext);
+    const { sessionData, setSessionData } = useContext(SessionContext);
+    const isLoggedIn = Boolean(sessionData?.user);
     const currentPath = window.location.pathname;
     const hideAuthButton = currentPath === '/login';
     const navigate = useNavigate();
 
     const handleLogout = async () => {
         try {
-            const response = await fetch('/logout', {
+            const response = await fetch('/api/logout', {
                 method: 'DELETE',
                 credentials: 'include'
             });
             if (response.ok) {
-                if (onLogout) {
-                    onLogout();
-                }
+                setSessionData(null);
                 navigate('/login');
             } else {
                 console.error('Logout failed.');

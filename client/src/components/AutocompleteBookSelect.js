@@ -1,16 +1,16 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import Select from 'react-select';
-import { BookDataContext } from '../App';
+import { useContext } from 'react';
+import { SessionContext } from '../index';
 
 function AutocompleteBookSelect({ onChange }) {
-  const { books } = useContext(BookDataContext);
-
+  const { sessionData } = useContext(SessionContext);
+  const books = sessionData?.libraries?.flatMap(lib => lib.books) || [];
   const options = books.map(book => ({
     value: book.id,
     label: book.title,
     author: book.author
   }));
-
   return (
     <Select
       options={options}

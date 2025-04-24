@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { SessionContext } from '../App';
+import { SessionContext } from '../index';
 import './BookCard.css'
 
 const cozyColors = [
@@ -31,7 +31,8 @@ function StarRating({ rating, onRate }) {
 }
 
 function BookCard({ book, onRate, onDelete, allowDelete = true }) {
-  const { isLoggedIn } = useContext(SessionContext);
+  const { sessionData } = useContext(SessionContext);
+  const isLoggedIn = Boolean(sessionData?.user);
   const [style, setStyle] = useState({});
 
   useEffect(() => {
@@ -46,17 +47,20 @@ function BookCard({ book, onRate, onDelete, allowDelete = true }) {
 
   const handleDelete = () => {
     if (window.confirm("Are you sure you want to delete this book?")) {
-    fetch(`/api/library/${book.libraryId}/books/${book.id}`, {
+      const url = `/api/library/${book.libraryId}/books/${book.id}`;
+      console.log("🔴 deleteBook URL:", url);
+      fetch(url, {
         method: 'DELETE',
         credentials: 'include'
       })
       .then(response => {
+        console.log("🔴 deleteBook response status:", response.status);
         if (response.ok) {
           if (onDelete) {
             onDelete(book.id);
           }
         } else {
-          console.error('Failed to delete the book.');
+          console.error('Failed to delete the book. Status:', response.status);
         }
       })
       .catch(error => console.error("Error deleting book:", error));
@@ -70,11 +74,13 @@ function BookCard({ book, onRate, onDelete, allowDelete = true }) {
       <p>Genre: {book.genre}</p>
       <p>Published Year: {book.published_year}</p>
       <div className="rating-section">
-        { isLoggedIn ? <p>Your Rating: {book.userRating}</p> : null }
-        <p>Global Rating: {book.globalRating || book.rating || 'N/A'}</p>
+        {isLoggedIn && (
+          <p>Your Rating: {book.rating?.userRating ?? 'N/A'}</p>
+        )}
+        <p>Global Rating: {book.rating?.globalRating ?? 'N/A'}</p>
         {onRate && (
           <StarRating
-            rating={book.userRating || 0}
+            rating={book.rating?.userRating ?? 0}
             onRate={(newRating) => onRate(book.id, newRating)}
           />
         )}

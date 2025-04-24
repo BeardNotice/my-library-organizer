@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useContext } from 'react';
-import { LibraryContext, SessionContext } from '../App';
+import React, { useState, useEffect, useContext } from 'react';
+import { SessionContext } from '../index';
 import { useNavigate } from 'react-router-dom';
 import BookCard from '../components/BookCard';
 import CreateLibraryModal from '../components/CreateLibrary';
@@ -10,8 +10,9 @@ import { librarySchema } from '../components/ValidationSchema';
 import './Home.css'
 
 function Home() {
-  const { libraries: libraryData, setLibraries: setLibraryData } = useContext(LibraryContext);
-  const { isLoggedIn } = useContext(SessionContext);
+  const { sessionData, setSessionData } = useContext(SessionContext);
+  const isLoggedIn = Boolean(sessionData?.user);
+  const libraryData = sessionData?.libraries || [];
   const [showLibraryModal, setShowLibraryModal] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [selectedLibrary, setSelectedLibrary] = useState(null);
@@ -26,8 +27,13 @@ function Home() {
   
 
   const deleteLibrary = (libraryId) => {
+    console.log("🔴 deleteLibrary called with libraryId:", libraryId);
+    if (!libraryId) {
+      console.error("deleteLibrary: libraryId is undefined!");
+      return;
+    }
     if (window.confirm('Are you sure you want to delete this library?')) {
-    fetch(`/api/library/${libraryId}/books`, {
+      fetch(`/api/libraries/${libraryId}/books`, {
         method: 'DELETE',
         credentials: 'include'
       })
@@ -41,7 +47,10 @@ function Home() {
           return response.json();
         })
         .then(() => {
-          setLibraryData(prev => prev.filter(lib => lib.id !== libraryId));
+          setSessionData(prev => ({
+            ...prev,
+            libraries: prev.libraries.filter(lib => lib.library_id !== libraryId)
+          }));
         })
         .catch(error => {
           console.error('Error deleting library:', error);
@@ -50,8 +59,8 @@ function Home() {
   };
 
   const handleRating = (libraryId, bookId, newRating) => {
-    fetch(`/api/library/${libraryId}/books/${bookId}`, {
-      method: 'PUT',
+    fetch(`/api/libraries/${libraryId}/books/${bookId}`, {
+      method: 'PATCH',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ rating: newRating })
@@ -61,14 +70,23 @@ function Home() {
         return res.json();
       })
       .then(updatedBook => {
-        setLibraryData(prev =>
-          prev.map(lib => ({
+        setSessionData(prev => ({
+          ...prev,
+          libraries: prev.libraries.map(lib => ({
             ...lib,
             books: lib.books.map(book =>
-              book.id === bookId ? { ...book, ...updatedBook } : book
+              book.id === bookId
+                ? {
+                    ...book,
+                    rating: {
+                      userRating: updatedBook.userRating,
+                      globalRating: updatedBook.globalRating
+                    }
+                  }
+                : book
             )
           }))
-        );
+        }));
       })
       .catch(err => console.error('Rating update error:', err));
   };
@@ -82,8 +100,8 @@ function Home() {
           initialValues={{ name: selectedLibrary.name }}
           validationSchema={librarySchema}
           onSubmit={(values, { setSubmitting }) => {
-            fetch(`/api/library/${selectedLibrary.id}/books`, {
-              method: 'PUT',
+            fetch(`/api/libraries/${selectedLibrary.library_id}/books`, {
+              method: 'PATCH',
               credentials: 'include',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ name: values.name })
@@ -95,9 +113,17 @@ function Home() {
                 return response.json();
               })
               .then((updatedLibrary) => {
-                setLibraryData(prev => prev.map(lib =>
-                  lib.id === updatedLibrary.id ? updatedLibrary : lib
-                ));
+                // Normalize returned library id to match sessionData shape
+                const libNorm = {
+                  ...updatedLibrary,
+                  library_id: updatedLibrary.id
+                };
+                setSessionData(prev => ({
+                  ...prev,
+                  libraries: prev.libraries.map(lib =>
+                    lib.library_id === libNorm.library_id ? libNorm : lib
+                  )
+                }));
                 setShowUpdateModal(false);
               })
               .catch(error => {
@@ -130,35 +156,36 @@ function Home() {
       <h1>Your Libraries</h1>
       {libraryData && libraryData.length > 0 ? (
         libraryData.map(library => (
-          <div key={library.id} className="library-section">
+          <div key={library.library_id} className="library-section">
             <h2>{library.name}</h2>
             {library.books && library.books.length > 0 ? (
               <div className="book-list">
                 {library.books.map(book => (
-                    <BookCard 
-                      key={book.id} 
-                      book={{ ...book, libraryId: library.id }} 
-                      onRate={(bookId, newRating) => handleRating(library.id, bookId, newRating)}
-                      onDelete={(bookId) => {
-                        setLibraryData(prev => prev.map(lib => {
-                          if (lib.id !== library.id) return lib;
-                          return {
-                            ...lib,
-                            books: lib.books.filter(book => book.id !== bookId)
-                          };
-                        }));
-                      }} 
-                    />
+                  <BookCard
+                    key={book.id}
+                    book={{ ...book, libraryId: library.library_id }}
+                    onRate={(bookId, newRating) => handleRating(library.library_id, bookId, newRating)}
+                    onDelete={(bookId) => {
+                      setSessionData(prev => ({
+                        ...prev,
+                        libraries: prev.libraries.map(lib =>
+                          lib.library_id === library.library_id
+                            ? { ...lib, books: lib.books.filter(b => b.id !== bookId) }
+                            : lib
+                        )
+                      }));
+                    }}
+                  />
                 ))}
               </div>
             ) : (
               <p>No books found in this library.</p>
             )}
             <div className="button-group">
-              <button className="btn" onClick={() => navigate(`/books/new?libraryId=${library.id}`)}>
+              <button className="btn" onClick={() => navigate(`/books/new?libraryId=${library.library_id}`)}>
                 Add New Book
               </button>
-              <button className="btn delete-btn" onClick={() => deleteLibrary(library.id)}>
+              <button className="btn delete-btn" onClick={() => deleteLibrary(library.library_id)}>
                 Delete Library
               </button>
               <button className="btn" onClick={() => { setSelectedLibrary(library); setShowUpdateModal(true); }}>
@@ -186,8 +213,15 @@ function Home() {
         <CreateLibraryModal 
           onClose={() => setShowLibraryModal(false)} 
           onSuccess={(newLibrary) => {
-            const updatedLibraries = libraryData ? [...libraryData, newLibrary] : [newLibrary];
-            setLibraryData(updatedLibraries);
+            const lib = {
+              library_id: newLibrary.id,
+              name: newLibrary.name,
+              books: []
+            };
+            setSessionData(prev => ({
+              ...prev,
+              libraries: prev.libraries ? [...prev.libraries, lib] : [lib]
+            }));
           }} 
         />
       )}

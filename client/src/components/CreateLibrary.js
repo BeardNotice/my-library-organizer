@@ -4,10 +4,11 @@ import { Formik, Form } from 'formik';
 import FormField from '../components/FormField';
 import { librarySchema } from '../components/ValidationSchema';
 import Modal from '../components/Modal';
-import { SessionContext } from '../App';
+import { SessionContext } from '../index';
 
 function CreateLibraryModal({ onClose, onSuccess }) {
-  const { isLoggedIn } = useContext(SessionContext);
+  const { sessionData } = useContext(SessionContext);
+  const isLoggedIn = Boolean(sessionData?.user);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,7 +23,7 @@ function CreateLibraryModal({ onClose, onSuccess }) {
   };
 
   const onSubmit = (values, { setSubmitting, setErrors }) => {
-    fetch('/api/library', {
+    fetch('/api/libraries', {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },

@@ -2,9 +2,9 @@ import BookCard from './BookCard';
 import './Library.css';
 
 
-function Library({ libraryData }) {
+function Library({ libraries }) {
 
-  const library = Array.isArray(libraryData) ? libraryData[0] : libraryData;
+  const library = Array.isArray(libraries) ? libraries[0] : libraries;
 
   if (!library) {
     return <p>No library found for this user.</p>;

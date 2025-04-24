@@ -1,83 +1,75 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { LibraryContext } from '../App';
 import { useNavigate, Link, Outlet } from 'react-router-dom';
 import BookCard from '../components/BookCard';
 import AutocompleteBookSelect from '../components/AutocompleteBookSelect';
-import { SessionContext, BookDataContext } from '../App';
+import { SessionContext } from '../index';
 import Modal from "../components/Modal";
 import './BookIndex.css';
 
 function BookIndex() {
-  const { isLoggedIn } = useContext(SessionContext);
-  const { setBooks: setGlobalBooks } = useContext(BookDataContext);
-  const [books, setBooks] = useState([]);
+  const { sessionData, setSessionData } = useContext(SessionContext);
+  const isLoggedIn = Boolean(sessionData?.user);
+  const libraries = sessionData?.libraries || [];
   const [filteredBooks, setFilteredBooks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const { libraries, setLibraries } = useContext(LibraryContext);
+  const [loading, setLoading] = useState(!sessionData);
   const [showModal, setShowModal] = useState(false);
   const [modalBook, setModalBook] = useState(null);
   const [addedMessage, setAddedMessage] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('/api/books', { credentials: 'include' })
-      .then(response => response.json())
-      .then(data => {
-        console.log("Fetched books:", data);
-        setBooks(data);
-        setFilteredBooks(data);
-        setLoading(false);
-      })
-      .catch(error => {
-        console.error("Error fetching books:", error);
-        setLoading(false);
-      });
-  }, []);
-  
-  
+    const allBooks = sessionData?.books || [];
+    setFilteredBooks(allBooks);
+    setLoading(false);
+  }, [sessionData]);
 
   const handleFilter = (selectedBook) => {
+    const allBooks = sessionData?.books || [];
     if (selectedBook) {
-      const filtered = books.filter(book => book.id === selectedBook.value);
-      setFilteredBooks(filtered);
+      const found = allBooks.find(book => book.id === selectedBook.value);
+      setFilteredBooks(found ? [found] : []);
     } else {
-      setFilteredBooks(books);
+      setFilteredBooks(allBooks);
     }
   };
 
   const handleAddToLibrary = (libraryId, book) => {
-    fetch(`/api/library/${libraryId}/books`, {
+    fetch(`/api/libraries/${libraryId}/books`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-         title: book.title,
-         author: book.author,
-         genre: book.genre,
-         published_year: book.published_year,
-         book_id: book.id
+      body: JSON.stringify({
+        title: book.title,
+        author: book.author,
+        genre: book.genre,
+        published_year: book.published_year,
+        book_id: book.id
       })
     })
-      .then(response => response.json())
-      .then(addedBook => {
-         const updateBooks = prevBooks => prevBooks.map(b =>
-           b.id === book.id
-             ? { ...b, userRating: addedBook.userRating, globalRating: addedBook.globalRating }
-             : b
-         );
-         setBooks(updateBooks);
-         setFilteredBooks(updateBooks);
-         setGlobalBooks(updateBooks);
-         const updatedLibrary = libraries.map(lib =>
-           lib.id === libraryId
-             ? { ...lib, books: [...lib.books, addedBook] }
-             : lib
-         );
-         setLibraries(updatedLibrary);
-         const selectedLibrary = libraries.find(lib => lib.id === libraryId);
-         setAddedMessage(`Book added to ${selectedLibrary.name}`);
-         setShowModal(false);
-         setModalBook(null);
+      .then(async response => {
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(text || 'Error adding book to library');
+        }
+        return response.json();
+      })
+      .then(updatedLibrary => {
+        // Normalize server library object to match client shape
+        const normalizedLib = {
+          library_id: updatedLibrary.id,
+          name: updatedLibrary.name,
+          books: updatedLibrary.books
+        };
+        setSessionData(prev => ({
+          ...prev,
+          libraries: prev.libraries.map(lib =>
+            lib.library_id === libraryId ? normalizedLib : lib
+          )
+        }));
+        // Display success message using the normalized library name
+        setAddedMessage(`Book added to ${normalizedLib.name}`);
+        setShowModal(false);
+        setModalBook(null);
       })
       .catch(error => console.error("Error adding book to library:", error));
   };
@@ -113,11 +105,11 @@ function BookIndex() {
               {libraries.map(lib => {
                 const alreadyAdded = lib.books && lib.books.some(b => b.id === modalBook.id);
                 return (
-                  <li key={lib.id}>
+                  <li key={lib.library_id}>
                     {alreadyAdded ? (
                       <span>{lib.name} (Already added)</span>
                     ) : (
-                      <button onClick={() => handleAddToLibrary(lib.id, modalBook)}>
+                      <button onClick={() => handleAddToLibrary(lib.library_id, modalBook)}>
                         {lib.name}
                       </button>
                     )}
@@ -126,7 +118,7 @@ function BookIndex() {
               })}
             </ul>
           ) : (
-            <p>You have no libraries. <Link to="/api/library/new">Create one</Link></p>
+            <p>You have no libraries. <Link to="/library/new">Create one</Link></p>
           )}
           <button onClick={() => setShowModal(false)}>Cancel</button>
         </Modal>

@@ -1,11 +1,14 @@
+import React, { useContext } from 'react';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
+import { SessionContext } from '../index';
 import { useNavigate, Link } from 'react-router-dom';
 import FormField from '../components/FormField';
 import './Login.css'
 
 function Login() {
   const navigate = useNavigate();
+  const { setSessionData } = useContext(SessionContext);
 
   const initialValues = {
     username: '',
@@ -27,9 +30,14 @@ function Login() {
       });
 
       if (response.ok) {
+        // Fetch full session data
+        const sessionRes = await fetch('/api/user_session', { credentials: 'include' });
+        if (sessionRes.ok) {
+          const data = await sessionRes.json();
+          setSessionData({ ...data, books: data.libraries.flatMap(lib => lib.books) });
+        }
         navigate('/');
-        const text = await response.text();
-        return text ? JSON.parse(text) : {};
+        return {};
       } else {
         const data = await response.json();
         const errorMessage = data.error || 'Login failed';

@@ -4,12 +4,12 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import FormField from '../components/FormField';
 import AutocompleteBookSelect from '../components/AutocompleteBookSelect';
 import { newBookSchema } from '../components/ValidationSchema';
-import { SessionContext, LibraryContext } from '../App';
+import { SessionContext } from '../index';
 import './NewBook.css';
 
 function NewBook() {
-  const { isLoggedIn } = useContext(SessionContext);
-  const { libraries, setLibraries } = useContext(LibraryContext);
+  const { sessionData, setSessionData } = useContext(SessionContext);
+  const isLoggedIn = Boolean(sessionData?.user);
   const [libraryId, setLibraryId] = useState(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -21,13 +21,14 @@ function NewBook() {
   }, [isLoggedIn, navigate]);
 
   useEffect(() => {
+    const libs = sessionData?.libraries || [];
     const queryLibraryId = searchParams.get('libraryId');
     if (queryLibraryId) {
       setLibraryId(queryLibraryId);
-    } else if (!libraryId && libraries.length > 0) {
-      setLibraryId(libraries[0].id);
+    } else if (!libraryId && libs.length > 0) {
+      setLibraryId(libs[0].library_id);
     } else if (!libraryId) {
-      fetch('/api/library', { credentials: 'include' })
+      fetch('/api/libraries', { credentials: 'include' })
         .then(response => {
           if (!response.ok) {
             throw new Error('Not authenticated or error fetching library');
@@ -36,7 +37,7 @@ function NewBook() {
         })
         .then(data => {
           if (data && data.length > 0) {
-            setLibraryId(data[0].id);
+            setLibraryId(data[0].library_id);
           } else {
             console.error('No library found for this user');
           }
@@ -45,7 +46,7 @@ function NewBook() {
           console.error('Error fetching library:', error);
         });
     }
-  }, [searchParams, libraryId]);
+  }, [searchParams, libraryId, sessionData]);
 
   const initialValues = {
     title: '',
@@ -82,7 +83,7 @@ function NewBook() {
 
     console.log('Payload being sent:', payload);
 
-    fetch(`/api/library/${libraryId}/books`, {
+    fetch(`/api/libraries/${libraryId}/books`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -91,9 +92,18 @@ function NewBook() {
       .then(response => {
         if (response.ok) {
           return response.json().then(updatedLibrary => {
-            setLibraries(prev => prev.map(lib =>
-              lib.id === updatedLibrary.id ? updatedLibrary : lib
-            ));
+            // Normalize and update the library in sessionData
+            const normalizedLib = {
+              library_id: updatedLibrary.id,
+              name: updatedLibrary.name,
+              books: updatedLibrary.books
+            };
+            setSessionData(prev => ({
+              ...prev,
+              libraries: prev.libraries.map(lib =>
+                lib.library_id === normalizedLib.library_id ? normalizedLib : lib
+              )
+            }));
             navigate('/');
             return updatedLibrary;
           });

@@ -2,29 +2,13 @@
 
 # Standard library imports
 
-# Remote library imports
 from flask import request, session, make_response
 from flask_restful import Resource
 from sqlalchemy.exc import IntegrityError
-
 # Local imports
 from config import app, db, api
-# Add your model imports
 from models import User, Library, Book, LibraryBooks, UserSchema, LibrarySchema, BookSchema
 
-def get_current_user():
-    return db.session.get(User, session.get('user_id'))
-
-def get_library_by_id(library_id, require_owner=False):
-    """Fetch a library by ID. If require_owner is True, ensure the current user owns the library."""
-    library = db.session.get(Library, library_id)
-    if not library:
-        return None
-    if library.private and library.user_id != session.get('user_id'):
-        return None
-    if require_owner and library.user_id != session.get('user_id'):
-        return None
-    return library
 
 # Views go here!
 @app.before_request
@@ -32,15 +16,10 @@ def login_check():
     
     if request.method =='OPTIONS':
         return
-    open_access_list = ['signup', 'login', 'check_session', 'books', 'index', 'static']
+    open_access_list = ['signup', 'login', 'logout', 'user_session', 'books', 'index', 'static']
 
     if (request.endpoint) not in open_access_list and (not session.get('user_id')):
         return {'error': '401 unauthorized'}, 401
-    
-class Index(Resource):
-    def get(self):
-        return app.send_static_file('index.html')
-
 
 class Signup(Resource):
     def post(self):
@@ -51,11 +30,12 @@ class Signup(Resource):
 
         if not username or not email or not password:
             return {"error": "Missing required fields"}, 400
-        existing_user = User.query.filter_by(username=username).first()
-        existing_email = User.query.filter_by(email=email).first()
-        if existing_user:
-            return {'error': 'Username already taken'}, 409
-        if existing_email:
+        conflict = User.query.filter(
+            (User.username == username) | (User.email == email)
+        ).first()
+        if conflict:
+            if conflict.username == username:
+                return {'error': 'Username already taken'}, 409
             return {'error': 'Email already registered'}, 409
         
         user = User(username=username, email=email)
@@ -96,22 +76,50 @@ class Logout(Resource):
 class CheckSession(Resource):
     def get(self):
         user_id = session.get('user_id')
+        user = None
         if user_id:
-            user = User.query.filter(User.id == user_id).first()
-            user_schema = UserSchema()
-            return user_schema.dump(user), 200
-        return {}, 401
+            user = db.session.get(User, user_id)
+
+        if not user:
+            return {"error": "unauthorized"}, 401
+
+        # Serialize user info
+        user_schema = UserSchema()
+        user_data = user_schema.dump(user)
+
+        # Build libraries with nested books and ratings
+        libraries_data = []
+        book_schema = BookSchema(context={'user_id': user.id})
+        for lib in user.libraries:
+            lib_obj = {
+                "library_id": lib.id,
+                "name": lib.name,
+                "books": []
+            }
+            for book in lib.books:
+                book_dict = book_schema.dump(book)
+                rating_obj = {
+                    "userRating": book_dict.pop("userRating", None),
+                    "globalRating": book_dict.pop("globalRating", None)
+                }
+                book_dict.pop("review_score", None)
+                book_dict["rating"] = rating_obj
+                lib_obj["books"].append(book_dict)
+            libraries_data.append(lib_obj)
+
+        return {"user": user_data, "libraries": libraries_data}, 200
     
 class LibraryIndex(Resource):
-    def get(self):
-        user = get_current_user()
-        if not user:
-            return {"error": "User not authenticated"}, 401
-        library_schema = LibrarySchema(context={'user_id': session.get('user_id')}, many=True)
-        return library_schema.dump(user.libraries), 200
-    
+##    def get(self):
+##        user = get_current_user()
+##        if not user:
+##            return {"error": "User not authenticated"}, 401
+##        library_schema = LibrarySchema(context={'user_id': session.get('user_id')}, many=True)
+##        return library_schema.dump(user.libraries), 200
+
     def post(self):
-        user = get_current_user()
+        user_id = session.get('user_id')
+        user = db.session.get(User, user_id)
         if not user:
             return {"error": "Unauthorized"}, 401
         data = request.get_json()
@@ -130,10 +138,13 @@ class LibraryIndex(Resource):
             return {'error': "422 Unprocessable Entity"}, 422
 
 
+
+
 class LibraryBooksResource(Resource):
-    def put(self, id):
-        library = get_library_by_id(id)
-        if not library:
+    def patch(self, id):
+        user_id = session.get('user_id')
+        library = db.session.get(Library, id)
+        if not library or library.user_id != user_id:
             return {"error": "Library not found or access unauthorized"}, 404
         data = request.get_json()
         name = data.get("name")
@@ -144,20 +155,12 @@ class LibraryBooksResource(Resource):
         library_schema = LibrarySchema()
         return library_schema.dump(library), 200
     
-
-    def get(self, id):
-        library = get_library_by_id(id)
-        if not library:
-            return {"error": "Library not found"}, 404
-
-        library_schema = LibrarySchema()
-        return make_response(library_schema.dump(library), 200)
-    
     def post(self, id):
-        library = get_library_by_id(id)
-        if not library:
+        user_id = session.get('user_id')
+        library = db.session.get(Library, id)
+        if not library or library.user_id != user_id:
             return {"error": "Library not found or access unauthorized"}, 404
- 
+
         data = request.get_json()
         book_id = data.get('book_id')
         title = data.get('title')
@@ -165,7 +168,7 @@ class LibraryBooksResource(Resource):
         genre = data.get('genre')
         published_year = data.get('published_year')
         rating = data.get('rating')
- 
+
         if not title:
             return {"error": "Missing required field 'title'"}, 400
         if not author:
@@ -173,13 +176,12 @@ class LibraryBooksResource(Resource):
 
         if rating is not None and (rating < 1 or rating > 5):
             return {"error": "Rating must be between 1 and 5"}, 400
-        
-        book = Book.query.filter(Book.id == book_id).first()
+
+        book = db.session.get(Book, book_id)
         if not book:
             book = Book(title=title, author=author, genre=genre, published_year=published_year)
             db.session.add(book)
-            db.session.commit()
-        
+
         if book not in library.books:
             library.books.append(book)
 
@@ -192,20 +194,22 @@ class LibraryBooksResource(Resource):
         return library_schema.dump(library), 201
 
     def delete(self, id):
-        library = get_library_by_id(id, require_owner=True)
-        if not library:
+        user_id = session.get('user_id')
+        library = db.session.get(Library, id)
+        if not library or library.user_id != user_id:
             return {"error": "Library not found or access unauthorized"}, 404
         db.session.delete(library)
         db.session.commit()
         return {}, 204
     
 class LibraryBookReview(Resource):
-    def put(self, library_id, book_id):
-        user = get_current_user()
+    def patch(self, library_id, book_id):
+        user_id = session.get('user_id')
+        user = db.session.get(User, user_id)
         if not user:
             return {"error": "Unauthorized"}, 401
-        library = Library.query.filter_by(id=library_id, user_id=user.id).first()
-        if not library:
+        library = db.session.get(Library, library_id)
+        if not library or library.user_id != user.id:
             return {"error": "Unauthorized or library not found"}, 404
         data = request.get_json()
         try:
@@ -233,12 +237,10 @@ class LibraryBookReview(Resource):
         return updated_book_json, 200
 
     def delete(self, library_id, book_id):
-        user = get_current_user()
-        if not user:
-            return {"error": "Unauthorized"}, 401
-        library = get_library_by_id(library_id, require_owner=True)
-        if not library:
-            return {"error": "Unauthorized or library not found"}, 401
+        user_id = session.get('user_id')
+        library = db.session.get(Library, library_id)
+        if not library or library.user_id != user_id:
+            return {"error": "Library not found or access unauthorized"}, 401
         library_book = LibraryBooks.query.filter_by(library_id=library_id, book_id=book_id).first()
         if not library_book:
             return {"error": "Library book association not found"}, 404
@@ -256,15 +258,13 @@ class BooksIndex(Resource):
         book_schema = BookSchema(many=True, context={'user_id': user_id})
         return book_schema.dump(books), 200
 
-api.add_resource(Index, "/")
 api.add_resource(Signup, "/api/signup", endpoint='signup')
 api.add_resource(Login, "/api/login", endpoint='login')
-api.add_resource(Logout, '/logout', endpoint='logout')
-api.add_resource(CheckSession, "/check_session", endpoint="check_session")
-api.add_resource(LibraryIndex, "/api/library", endpoint="library")
-## Removed LibraryByID resource; its functionality is now handled by LibraryBooksResource
-api.add_resource(LibraryBooksResource, "/api/library/<int:id>/books")
-api.add_resource(LibraryBookReview, "/api/library/<int:library_id>/books/<int:book_id>")
+api.add_resource(Logout, "/api/logout", endpoint='logout')
+api.add_resource(CheckSession, "/api/user_session", endpoint="user_session")
+api.add_resource(LibraryIndex, "/api/libraries", endpoint="libraries")
+api.add_resource(LibraryBooksResource, "/api/libraries/<int:id>/books", endpoint="library_books")
+api.add_resource(LibraryBookReview, "/api/libraries/<int:library_id>/books/<int:book_id>", endpoint="library_book_review")
 api.add_resource(BooksIndex, "/api/books", endpoint="books")
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
