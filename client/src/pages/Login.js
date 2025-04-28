@@ -20,7 +20,7 @@ function Login() {
     password: Yup.string().required('Required')
   });
 
-  // Log in user, then pull session data and full book list
+  // Handle login: send creds, fetch session & books, then redirect
   const onSubmit = async (values, { setSubmitting, setErrors }) => {
     try {
       const response = await fetch('/api/login', {

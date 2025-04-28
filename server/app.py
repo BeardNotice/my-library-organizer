@@ -127,6 +127,7 @@ class LibraryIndex(Resource):
 
 # Manage library contents: rename, add books, delete library
 class LibraryBooksResource(Resource):
+    # Add or update a book in a library: create book if needed, then attach and record rating
     def patch(self, id):
         user_id = session.get('user_id')
         library = db.session.get(Library, id)
@@ -189,6 +190,7 @@ class LibraryBooksResource(Resource):
         return {}, 204
 # Update or remove a specific book rating in a library
 class LibraryBookReview(Resource):
+    # Update a book’s rating in a specific library, enforcing 1–5 range
     def patch(self, library_id, book_id):
         user_id = session.get('user_id')
         user = db.session.get(User, user_id)
@@ -238,6 +240,7 @@ class LibraryBookReview(Resource):
         return {}, 204
 # Fetch full book list with user and global ratings
 class BooksIndex(Resource):
+    # Return full catalog of books, including user-specific and global ratings
     def get(self):
         books = Book.query.all()
         user_id = session.get('user_id')

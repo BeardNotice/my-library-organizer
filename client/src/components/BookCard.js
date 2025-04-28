@@ -38,7 +38,7 @@ function BookCard({ book, allowDelete = true }) {
 
 
   return (
-    <div className="book-card" style={{ ...style }}>
+    <div className="book-card" style={style}>
       <h3>{book.title}</h3>
       <p>Author: {book.author}</p>
       <p>Genre: {book.genre}</p>

@@ -1,5 +1,6 @@
-
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useContext } from 'react';
+import { useRequireLogin } from '../components/UseRequireLogin';
+import { useLibraryActions } from '../components/UseLibraryActions';
 import { SessionContext } from '../index';
 import { useNavigate } from 'react-router-dom';
 import BookCard from '../components/BookCard';
@@ -39,89 +40,17 @@ function UpdateLibraryModal({ library, onClose, onSubmit }) {
   );
 }
 
+
 function Home() {
   const { sessionData, setSessionData } = useContext(SessionContext);
+  const { deleteLibrary, updateLibrary } = useLibraryActions();
   // sessionData always exists; user prop only set when logged in, so we derive isLoggedIn from sessionData.user
-  const isLoggedIn = Boolean(sessionData?.user);
   const libraryData = sessionData?.libraries || [];
   const [showLibraryModal, setShowLibraryModal] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [selectedLibrary, setSelectedLibrary] = useState(null);
-  const navigate = useNavigate();
-  
-  useEffect(() => {
-    if (isLoggedIn === false) {
-      navigate('/login');
-    }
-  }, [isLoggedIn, navigate]);
-  
-  
-
-  const deleteLibrary = (libraryId) => {
-    if (!libraryId) {
-      console.error("deleteLibrary: libraryId is undefined!");
-      return;
-    }
-    if (window.confirm('Are you sure you want to delete this library?')) {
-      fetch(`/api/libraries/${libraryId}/books`, {
-        method: 'DELETE',
-        credentials: 'include'
-      })
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Failed to delete library');
-          }
-          if (response.status === 204) {
-            return {};
-          }
-          return response.json();
-        })
-        .then(() => {
-          setSessionData(prev => ({
-            ...prev,
-            libraries: prev.libraries.filter(lib => lib.id !== libraryId)
-          }));
-        })
-        .catch(error => {
-          console.error('Error deleting library:', error);
-        });
-    }
-  };
-
-  const handleRating = (libraryId, bookId, newRating) => {
-    fetch(`/api/libraries/${libraryId}/books/${bookId}`, {
-      method: 'PATCH',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rating: newRating })
-    })
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to update rating');
-        return res.json();
-      })
-      .then(updatedBook => {
-        setSessionData(prev => ({
-          ...prev,
-          libraries: prev.libraries.map(lib => ({
-            ...lib,
-            books: lib.books.map(book =>
-              book.id === bookId
-                ? {
-                    ...book,
-                    rating: {
-                      userRating: updatedBook.rating?.userRating ?? null,
-                      globalRating: updatedBook.rating?.globalRating ?? null
-                    }
-                  }
-                : book
-            )
-          }))
-        }));
-      })
-      .catch(err => console.error('Rating update error:', err));
-  };
-
-
+  const navigate = useNavigate();  
+  useRequireLogin()
 
   return (
     <div className="home-container">
@@ -149,7 +78,14 @@ function Home() {
               <button className="btn" onClick={() => navigate(`/books/new?libraryId=${library.id}`)}>
                 Add New Book
               </button>
-              <button className="btn delete-btn" onClick={() => deleteLibrary(library.id)}>
+              <button
+                className="btn delete-btn"
+                onClick={() => {
+                  if (window.confirm('Are you sure you want to delete this library?')) {
+                    deleteLibrary(library.id);
+                  }
+                }}
+              >
                 Delete Library
               </button>
               <button className="btn" onClick={() => { setSelectedLibrary(library); setShowUpdateModal(true); }}>
@@ -177,27 +113,7 @@ function Home() {
           library={selectedLibrary}
           onClose={() => setShowUpdateModal(false)}
           onSubmit={(id, newName) =>
-            fetch(`/api/libraries/${id}/books`, {
-              method: 'PATCH',
-              credentials: 'include',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ name: newName })
-            })
-              .then(response => {
-                if (!response.ok) throw new Error('Failed to update library');
-                return response.json();
-              })
-              .then(updatedLibrary => {
-                const libNorm = { ...updatedLibrary, id: updatedLibrary.id };
-                setSessionData(prev => ({
-                  ...prev,
-                  libraries: prev.libraries.map(lib =>
-                    lib.id === libNorm.id ? libNorm : lib
-                  )
-                }));
-              })
-              .catch(error => console.error('Error updating library:', error))
-              .finally(() => setShowUpdateModal(false))
+            updateLibrary(id, newName).finally(() => setShowUpdateModal(false))
           }
         />
       )}

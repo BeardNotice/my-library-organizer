@@ -11,6 +11,7 @@ function NavBar({ onLogout }) {
     const hideAuthButton = currentPath === '/login';
     const navigate = useNavigate();
 
+    // Log out the current user, clear session, and reload global books
     const handleLogout = async () => {
         try {
             const response = await fetch('/api/logout', {

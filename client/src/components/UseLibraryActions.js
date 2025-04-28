@@ -50,5 +50,40 @@ export function useLibraryActions() {
     });
   }
 
-  return { deleteBook, rateBook };
+  function deleteLibrary(libraryId) {
+    return fetch(`/api/libraries/${libraryId}/books`, {
+      method: 'DELETE',
+      credentials: 'include'
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('Delete library failed');
+      setSessionData(prev => ({
+        ...prev,
+        libraries: prev.libraries.filter(lib => lib.id !== libraryId)
+      }));
+    });
+  }
+
+  function updateLibrary(libraryId, newName) {
+    return fetch(`/api/libraries/${libraryId}/books`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newName })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('Update library failed');
+      return res.json();
+    })
+    .then(updatedLibrary => {
+      setSessionData(prev => ({
+        ...prev,
+        libraries: prev.libraries.map(lib =>
+          lib.id === updatedLibrary.id ? { ...updatedLibrary, id: updatedLibrary.id } : lib
+        )
+      }));
+    });
+  }
+
+  return { deleteBook, rateBook, deleteLibrary, updateLibrary };
 }

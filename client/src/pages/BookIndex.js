@@ -6,6 +6,57 @@ import { SessionContext } from '../index';
 import Modal from "../components/Modal";
 import './BookIndex.css';
 
+// Add selected book to library, update session state, and show messages
+function addBookToLibrary(libraryId, book, setSessionData, setAddedMessage, setShowModal, setModalBook) {
+  fetch(`/api/libraries/${libraryId}/books`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: book.title,
+      author: book.author,
+      genre: book.genre,
+      published_year: book.published_year,
+      book_id: book.id
+    })
+  })
+    .then(async response => {
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || 'Error adding book to library');
+      }
+      return response.json();
+    })
+    .then(updatedLibrary => {
+      const normalizedLib = {
+        id: updatedLibrary.id,
+        name: updatedLibrary.name,
+        books: updatedLibrary.books
+      };
+      setSessionData(prev => {
+        const updatedLibraries = prev.libraries.map(lib =>
+          lib.id === libraryId ? normalizedLib : lib
+        );
+        const existingBooks = prev.books || [];
+        const mergedBooks = [...existingBooks];
+        normalizedLib.books.forEach(book => {
+          if (!existingBooks.some(b => b.id === book.id)) {
+            mergedBooks.push(book);
+          }
+        });
+        return {
+          ...prev,
+          libraries: updatedLibraries,
+          books: mergedBooks
+        };
+      });
+      setAddedMessage(`Book added to ${normalizedLib.name}`);
+      setShowModal(false);
+      setModalBook(null);
+    })
+    .catch(error => console.error("Error adding book to library:", error));
+}
+
 function BookIndex() {
   const { sessionData, setSessionData } = useContext(SessionContext);
   // sessionData always exists; user prop only set when logged in, so we derive isLoggedIn from sessionData.user
@@ -18,6 +69,7 @@ function BookIndex() {
   const [addedMessage, setAddedMessage] = useState(null);
   const navigate = useNavigate();
 
+  // Whenever sessionData changes, refresh the displayed book list
   useEffect(() => {
     setFilteredBooks(sessionData?.books || []);
     setLoading(false);
@@ -32,56 +84,6 @@ function BookIndex() {
     );
   };
 
-  // Tell backend to add chosen book, then stitch it into state
-  const handleAddToLibrary = (libraryId, book) => {
-    fetch(`/api/libraries/${libraryId}/books`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: book.title,
-        author: book.author,
-        genre: book.genre,
-        published_year: book.published_year,
-        book_id: book.id
-      })
-    })
-      .then(async response => {
-        if (!response.ok) {
-          const text = await response.text();
-          throw new Error(text || 'Error adding book to library');
-        }
-        return response.json();
-      })
-      .then(updatedLibrary => {
-        const normalizedLib = {
-          id: updatedLibrary.id,
-          name: updatedLibrary.name,
-          books: updatedLibrary.books
-        };
-        setSessionData(prev => {
-          const updatedLibraries = prev.libraries.map(lib =>
-            lib.id === libraryId ? normalizedLib : lib
-          );
-          const existingBooks = prev.books || [];
-          const mergedBooks = [...existingBooks];
-          normalizedLib.books.forEach(book => {
-            if (!existingBooks.some(b => b.id === book.id)) {
-              mergedBooks.push(book);
-            }
-          });
-          return {
-            ...prev,
-            libraries: updatedLibraries,
-            books: mergedBooks
-          };
-        });
-        setAddedMessage(`Book added to ${normalizedLib.name}`);
-        setShowModal(false);
-        setModalBook(null);
-      })
-      .catch(error => console.error("Error adding book to library:", error));
-  };
 
   if (loading) {
     return <p>Loading books...</p>;
@@ -118,7 +120,7 @@ function BookIndex() {
                     {alreadyAdded ? (
                       <span>{lib.name} (Already added)</span>
                     ) : (
-                      <button onClick={() => handleAddToLibrary(lib.id, modalBook)}>
+                      <button onClick={() => addBookToLibrary(lib.id, modalBook, setSessionData, setAddedMessage, setShowModal, setModalBook)}>
                         {lib.name}
                       </button>
                     )}

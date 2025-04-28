@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { useRequireLogin } from '../components/UseRequireLogin';
 import { Formik, Form } from 'formik';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import FormField from '../components/FormField';
@@ -7,22 +8,80 @@ import { newBookSchema } from '../components/ValidationSchema';
 import { SessionContext } from '../index';
 import './NewBook.css';
 
+// Add new book to library and update sessionData, then navigate home
+function addNewBook(values, libraryId, setSessionData, navigate, setSubmitting, setErrors) {
+  if (!libraryId) {
+    setErrors({ title: 'Library not found' });
+    setSubmitting(false);
+    return;
+  }
+  let payload = { ...values };
+  if (values.selectedBook) {
+    payload.book_id = values.selectedBook.value;
+    if (!payload.title) payload.title = values.selectedBook.label;
+    if (!payload.author && values.selectedBook.author) payload.author = values.selectedBook.author;
+  }
+  delete payload.selectedBook;
+  if (payload.published_year === '') {
+    payload.published_year = null;
+  } else {
+    payload.published_year = Number(payload.published_year);
+  }
+  fetch(`/api/libraries/${libraryId}/books`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+    .then(response => {
+      if (!response.ok) {
+        return response.json().then(data => {
+          setErrors({ title: data.error || 'Error adding book' });
+          throw new Error('Error adding book');
+        });
+      }
+      return response.json();
+    })
+    .then(updatedLibrary => {
+      const normalizedLib = {
+        id: updatedLibrary.id,
+        name: updatedLibrary.name,
+        books: updatedLibrary.books
+      };
+      setSessionData(prev => {
+        const updatedLibraries = prev.libraries.map(lib =>
+          lib.id === normalizedLib.id ? normalizedLib : lib
+        );
+        const existingBooks = prev.books || [];
+        const mergedBooks = [...existingBooks];
+        normalizedLib.books.forEach(book => {
+          if (!existingBooks.some(b => b.id === book.id)) {
+            mergedBooks.push(book);
+          }
+        });
+        return {
+          ...prev,
+          libraries: updatedLibraries,
+          books: mergedBooks
+        };
+      });
+      navigate('/');
+      return updatedLibrary;
+    })
+    .catch(error => console.error('Error adding new book:', error))
+    .finally(() => setSubmitting(false));
+}
+
 function NewBook() {
   const { sessionData, setSessionData } = useContext(SessionContext);
-  // sessionData always exists; user prop only set when logged in, so we derive isLoggedIn from sessionData.user
-  const isLoggedIn = Boolean(sessionData?.user);
   const [libraryId, setLibraryId] = useState(null);
   const navigate = useNavigate();
+  useRequireLogin()
   const [searchParams] = useSearchParams();
 
+  // Pick library ID from URL or session; if none, fetch default library
   useEffect(() => {
-    if (!isLoggedIn) {
-      navigate('/login');
-    }
-  }, [isLoggedIn, navigate]);
-
-  useEffect(() => {
-    const libs = sessionData?.libraries || [];
+    const libs = sessionData.libraries || [];
     const queryLibraryId = searchParams.get('libraryId');
     if (queryLibraryId) {
       setLibraryId(queryLibraryId);
@@ -47,7 +106,7 @@ function NewBook() {
           console.error('Error fetching library:', error);
         });
     }
-  }, [searchParams, libraryId, sessionData]);
+  }, [searchParams, sessionData.libraries, libraryId]);
 
   const initialValues = {
     title: '',
@@ -57,85 +116,6 @@ function NewBook() {
     selectedBook: null
   };
 
-  const onSubmit = (values, { setSubmitting, setErrors }) => {
-    if (!libraryId) {
-      setErrors({ title: 'Library not found' });
-      setSubmitting(false);
-      return;
-    }
-
-    // Build payload: use selectedBook info or new details
-    let payload = { ...values };
-    if (values.selectedBook) {
-      payload.book_id = values.selectedBook.value;
-      if (!payload.title) {
-        payload.title = values.selectedBook.label;
-      }
-      if (!payload.author && values.selectedBook.author) {
-        payload.author = values.selectedBook.author;
-      }
-    }
-    delete payload.selectedBook;
-
-    if (payload.published_year === '') {
-      payload.published_year = null;
-    } else {
-      payload.published_year = Number(payload.published_year);
-    }
-
-    console.log('Payload being sent:', payload);
-
-    fetch(`/api/libraries/${libraryId}/books`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    })
-      .then(response => {
-        if (response.ok) {
-          return response.json().then(updatedLibrary => {
-            // Normalize and update the library in sessionData
-            const normalizedLib = {
-              id: updatedLibrary.id,
-              name: updatedLibrary.name,
-              books: updatedLibrary.books
-            };
-            setSessionData(prev => {
-              // update libraries
-              const updatedLibraries = prev.libraries.map(lib =>
-                lib.id === normalizedLib.id ? normalizedLib : lib
-              );
-              // merge global books
-              const existingBooks = prev.books || [];
-              const mergedBooks = [...existingBooks];
-              normalizedLib.books.forEach(book => {
-                if (!existingBooks.some(b => b.id === book.id)) {
-                  mergedBooks.push(book);
-                }
-              });
-              return {
-                ...prev,
-                libraries: updatedLibraries,
-                books: mergedBooks
-              };
-            });
-            navigate('/');
-            return updatedLibrary;
-          });
-        } else {
-          return response.json().then(data => {
-            setErrors({ title: data.error || 'Error adding book' });
-            throw new Error('Error adding book');
-          });
-        }
-      })
-      .catch(error => {
-        console.error('Error adding new book:', error);
-      })
-      .finally(() => {
-        setSubmitting(false);
-      });
-  };
 
   return (
     <div className="new-book-container">
@@ -143,7 +123,9 @@ function NewBook() {
       <Formik
         initialValues={initialValues}
         validationSchema={newBookSchema}
-        onSubmit={onSubmit}
+        onSubmit={(values, { setSubmitting, setErrors }) =>
+          addNewBook(values, libraryId, setSessionData, navigate, setSubmitting, setErrors)
+        }
       >
         {formik => (
           <Form>
@@ -151,7 +133,6 @@ function NewBook() {
             <FormField label="Author" name="author" type="text" />
             <FormField label="Genre" name="genre" type="text" />
             <FormField label="Published Year" name="published_year" type="number" />
-            {/* <FormField label="Rating" name="rating" type="number" min="1" max="5" /> */}
             <p>Or select an existing book:</p>
             <AutocompleteBookSelect 
               onChange={(selected) => formik.setFieldValue('selectedBook', selected)}
