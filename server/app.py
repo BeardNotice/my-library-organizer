@@ -98,13 +98,6 @@ class CheckSession(Resource):
     
 # Create a new library for the current user
 class LibraryIndex(Resource):
-##    def get(self):
-##        user = get_current_user()
-##        if not user:
-##            return {"error": "User not authenticated"}, 401
-##        library_schema = LibrarySchema(context={'user_id': session.get('user_id')}, many=True)
-##        return library_schema.dump(user.libraries), 200
-
     def post(self):
         user_id = session.get('user_id')
         user = db.session.get(User, user_id)
@@ -164,7 +157,10 @@ class LibraryBooksResource(Resource):
         if rating is not None and (rating < 1 or rating > 5):
             return {"error": "Rating must be between 1 and 5"}, 400
 
-        book = db.session.get(Book, book_id)
+        # Only load existing Book when a valid book_id is provided
+        book = None
+        if book_id is not None:
+            book = db.session.get(Book, book_id)
         if not book:
             book = Book(title=title, author=author, genre=genre, published_year=published_year)
             db.session.add(book)
