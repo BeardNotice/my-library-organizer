@@ -18,18 +18,32 @@ function BookIndex() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const allBooks = sessionData?.books || [];
-    setFilteredBooks(allBooks);
+    const rawBooks = sessionData?.books || [];
+    const shapedBooks = rawBooks.map(book => ({
+      ...book,
+      rating: {
+        userRating: book.userRating,
+        globalRating: book.globalRating
+      }
+    }));
+    setFilteredBooks(shapedBooks);
     setLoading(false);
   }, [sessionData]);
 
   const handleFilter = (selectedBook) => {
-    const allBooks = sessionData?.books || [];
+    const rawBooks = sessionData?.books || [];
+    const shapedBooks = rawBooks.map(book => ({
+      ...book,
+      rating: {
+        userRating: book.userRating,
+        globalRating: book.globalRating
+      }
+    }));
     if (selectedBook) {
-      const found = allBooks.find(book => book.id === selectedBook.value);
+      const found = shapedBooks.find(b => b.id === selectedBook.value);
       setFilteredBooks(found ? [found] : []);
     } else {
-      setFilteredBooks(allBooks);
+      setFilteredBooks(shapedBooks);
     }
   };
 
@@ -54,19 +68,28 @@ function BookIndex() {
         return response.json();
       })
       .then(updatedLibrary => {
-        // Normalize server library object to match client shape
         const normalizedLib = {
           library_id: updatedLibrary.id,
           name: updatedLibrary.name,
           books: updatedLibrary.books
         };
-        setSessionData(prev => ({
-          ...prev,
-          libraries: prev.libraries.map(lib =>
+        setSessionData(prev => {
+          const updatedLibraries = prev.libraries.map(lib =>
             lib.library_id === libraryId ? normalizedLib : lib
-          )
-        }));
-        // Display success message using the normalized library name
+          );
+          const existingBooks = prev.books || [];
+          const mergedBooks = [...existingBooks];
+          normalizedLib.books.forEach(book => {
+            if (!existingBooks.some(b => b.id === book.id)) {
+              mergedBooks.push(book);
+            }
+          });
+          return {
+            ...prev,
+            libraries: updatedLibraries,
+            books: mergedBooks
+          };
+        });
         setAddedMessage(`Book added to ${normalizedLib.name}`);
         setShowModal(false);
         setModalBook(null);

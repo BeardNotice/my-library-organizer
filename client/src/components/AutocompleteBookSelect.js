@@ -1,6 +1,5 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import Select from 'react-select';
-import { useContext } from 'react';
 import { SessionContext } from '../index';
 
 function AutocompleteBookSelect({ onChange }) {

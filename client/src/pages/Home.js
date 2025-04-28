@@ -27,7 +27,6 @@ function Home() {
   
 
   const deleteLibrary = (libraryId) => {
-    console.log("🔴 deleteLibrary called with libraryId:", libraryId);
     if (!libraryId) {
       console.error("deleteLibrary: libraryId is undefined!");
       return;
@@ -160,23 +159,29 @@ function Home() {
             <h2>{library.name}</h2>
             {library.books && library.books.length > 0 ? (
               <div className="book-list">
-                {library.books.map(book => (
-                  <BookCard
-                    key={book.id}
-                    book={{ ...book, libraryId: library.library_id }}
-                    onRate={(bookId, newRating) => handleRating(library.library_id, bookId, newRating)}
-                    onDelete={(bookId) => {
-                      setSessionData(prev => ({
-                        ...prev,
-                        libraries: prev.libraries.map(lib =>
-                          lib.library_id === library.library_id
-                            ? { ...lib, books: lib.books.filter(b => b.id !== bookId) }
-                            : lib
-                        )
-                      }));
-                    }}
-                  />
-                ))}
+                {library.books.map(book => {
+                  const ratingObj = book.rating ?? {
+                    userRating: book.userRating,
+                    globalRating: book.globalRating
+                  };
+                  return (
+                    <BookCard
+                      key={book.id}
+                      book={{ ...book, libraryId: library.library_id, rating: ratingObj }}
+                      onRate={(bookId, newRating) => handleRating(library.library_id, bookId, newRating)}
+                      onDelete={(bookId) => {
+                        setSessionData(prev => ({
+                          ...prev,
+                          libraries: prev.libraries.map(lib =>
+                            lib.library_id === library.library_id
+                              ? { ...lib, books: lib.books.filter(b => b.id !== bookId) }
+                              : lib
+                          )
+                        }));
+                      }}
+                    />
+                  );
+                })}
               </div>
             ) : (
               <p>No books found in this library.</p>

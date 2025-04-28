@@ -17,8 +17,17 @@ function NavBar({ onLogout }) {
                 credentials: 'include'
             });
             if (response.ok) {
-                setSessionData(null);
-                navigate('/login');
+              try {
+                const booksRes = await fetch('/api/books', {
+                  credentials: 'include'
+                });
+                const booksList = booksRes.ok ? await booksRes.json() : [];
+                setSessionData({ books: booksList });
+              } catch (err) {
+                console.error('Error fetching global books after logout:', err);
+                setSessionData({ books: [] });
+              }
+              navigate('/books');
             } else {
                 console.error('Logout failed.');
             }

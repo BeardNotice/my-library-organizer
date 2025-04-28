@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useContext } from 'react';
 import { SessionContext } from '../index';
 import './BookCard.css'
 
@@ -11,8 +11,7 @@ const cozyColors = [
 ];
 
 function StarRating({ rating, onRate }) {
-  const [hover, setHover] = useState(0);
-
+  const [hover, setHover] = React.useState(0);
   return (
     <div>
       {[1, 2, 3, 4, 5].map((star) => (
@@ -33,28 +32,19 @@ function StarRating({ rating, onRate }) {
 function BookCard({ book, onRate, onDelete, allowDelete = true }) {
   const { sessionData } = useContext(SessionContext);
   const isLoggedIn = Boolean(sessionData?.user);
-  const [style, setStyle] = useState({});
-
-  useEffect(() => {
-    const index = book.id % cozyColors.length;
-    const { background, text } = cozyColors[index];
-    setStyle({
-      backgroundColor: background,
-      color: text
-    });
-  }, [book.id]);
-
+  // Inline style calculation
+  const index = book.id % cozyColors.length;
+  const { background, text } = cozyColors[index];
+  const style = { backgroundColor: background, color: text };
 
   const handleDelete = () => {
     if (window.confirm("Are you sure you want to delete this book?")) {
       const url = `/api/library/${book.libraryId}/books/${book.id}`;
-      console.log("🔴 deleteBook URL:", url);
       fetch(url, {
         method: 'DELETE',
         credentials: 'include'
       })
       .then(response => {
-        console.log("🔴 deleteBook response status:", response.status);
         if (response.ok) {
           if (onDelete) {
             onDelete(book.id);
@@ -68,7 +58,7 @@ function BookCard({ book, onRate, onDelete, allowDelete = true }) {
   };
 
   return (
-    <div className="book-card" style = {{...style}}>
+    <div className="book-card" style={{ ...style }}>
       <h3>{book.title}</h3>
       <p>Author: {book.author}</p>
       <p>Genre: {book.genre}</p>
