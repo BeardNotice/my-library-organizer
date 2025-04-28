@@ -11,7 +11,7 @@ function NavBar({ onLogout }) {
     const hideAuthButton = currentPath === '/login';
     const navigate = useNavigate();
 
-    // Log out the current user, clear session, and reload global books
+    // Log out the current user, clear user and libraries from session
     const handleLogout = async () => {
         try {
             const response = await fetch('/api/logout', {
@@ -19,17 +19,12 @@ function NavBar({ onLogout }) {
                 credentials: 'include'
             });
             if (response.ok) {
-              try {
-                const booksRes = await fetch('/api/books', {
-                  credentials: 'include'
-                });
-                const booksList = booksRes.ok ? await booksRes.json() : [];
-                setSessionData({ books: booksList });
-              } catch (err) {
-                console.error('Error fetching global books after logout:', err);
-                setSessionData({ books: [] });
-              }
-              navigate('/books');
+                setSessionData(prev => ({
+                  ...prev,
+                  user: null,
+                  libraries: []
+                }));
+                navigate('/books');
             } else {
                 console.error('Logout failed.');
             }
