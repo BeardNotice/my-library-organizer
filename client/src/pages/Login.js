@@ -20,6 +20,7 @@ function Login() {
     password: Yup.string().required('Required')
   });
 
+  // Log in user, then pull session data and full book list
   const onSubmit = async (values, { setSubmitting, setErrors }) => {
     try {
       const response = await fetch('/api/login', {
@@ -30,12 +31,22 @@ function Login() {
       });
 
       if (response.ok) {
-        // Fetch full session data
+        // Fetch session data
+        let data = {};
         const sessionRes = await fetch('/api/user_session', { credentials: 'include' });
         if (sessionRes.ok) {
-          const data = await sessionRes.json();
-          setSessionData({ ...data, books: data.libraries.flatMap(lib => lib.books) });
+          data = await sessionRes.json();
         }
+
+        // Fetch global books list
+        let books = [];
+        const booksRes = await fetch('/api/books', { credentials: 'include' });
+        if (booksRes.ok) {
+          books = await booksRes.json();
+        }
+
+        // Set sessionData with both user info, libraries, and full book list
+        setSessionData({ ...data, books });
         navigate('/');
         return {};
       } else {

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useContext } from 'react';
 import { SessionContext } from '../index';
 import { useNavigate } from 'react-router-dom';
@@ -9,8 +10,38 @@ import FormField from '../components/FormField';
 import { librarySchema } from '../components/ValidationSchema';
 import './Home.css'
 
+function UpdateLibraryModal({ library, onClose, onSubmit }) {
+  if (!library) return null;
+  return (
+    <Modal onClose={onClose}>
+      <h2>Update Library Name</h2>
+      <Formik
+        initialValues={{ name: library.name }}
+        validationSchema={librarySchema}
+        onSubmit={(values, { setSubmitting }) => {
+          onSubmit(library.id, values.name)
+            .finally(() => setSubmitting(false));
+        }}
+      >
+        {({ isSubmitting }) => (
+          <Form>
+            <FormField name="name" label="Library Name" />
+            <button type="submit" className="btn" disabled={isSubmitting}>
+              Update
+            </button>
+            <button type="button" className="btn cancel-btn" onClick={onClose}>
+              Cancel
+            </button>
+          </Form>
+        )}
+      </Formik>
+    </Modal>
+  );
+}
+
 function Home() {
   const { sessionData, setSessionData } = useContext(SessionContext);
+  // sessionData always exists; user prop only set when logged in, so we derive isLoggedIn from sessionData.user
   const isLoggedIn = Boolean(sessionData?.user);
   const libraryData = sessionData?.libraries || [];
   const [showLibraryModal, setShowLibraryModal] = useState(false);
@@ -48,7 +79,7 @@ function Home() {
         .then(() => {
           setSessionData(prev => ({
             ...prev,
-            libraries: prev.libraries.filter(lib => lib.library_id !== libraryId)
+            libraries: prev.libraries.filter(lib => lib.id !== libraryId)
           }));
         })
         .catch(error => {
@@ -78,8 +109,8 @@ function Home() {
                 ? {
                     ...book,
                     rating: {
-                      userRating: updatedBook.userRating,
-                      globalRating: updatedBook.globalRating
+                      userRating: updatedBook.rating?.userRating ?? null,
+                      globalRating: updatedBook.rating?.globalRating ?? null
                     }
                   }
                 : book
@@ -90,64 +121,6 @@ function Home() {
       .catch(err => console.error('Rating update error:', err));
   };
 
-  const renderUpdateModal = () => {
-    if (!showUpdateModal || !selectedLibrary) return null;
-    return (
-      <Modal onClose={() => setShowUpdateModal(false)}>
-        <h2>Update Library Name</h2>
-        <Formik
-          initialValues={{ name: selectedLibrary.name }}
-          validationSchema={librarySchema}
-          onSubmit={(values, { setSubmitting }) => {
-            fetch(`/api/libraries/${selectedLibrary.library_id}/books`, {
-              method: 'PATCH',
-              credentials: 'include',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ name: values.name })
-            })
-              .then(response => {
-                if (!response.ok) {
-                  throw new Error('Failed to update library');
-                }
-                return response.json();
-              })
-              .then((updatedLibrary) => {
-                // Normalize returned library id to match sessionData shape
-                const libNorm = {
-                  ...updatedLibrary,
-                  library_id: updatedLibrary.id
-                };
-                setSessionData(prev => ({
-                  ...prev,
-                  libraries: prev.libraries.map(lib =>
-                    lib.library_id === libNorm.library_id ? libNorm : lib
-                  )
-                }));
-                setShowUpdateModal(false);
-              })
-              .catch(error => {
-                console.error('Error updating library:', error);
-              })
-              .finally(() => {
-                setSubmitting(false);
-              });
-          }}
-        >
-          {({ isSubmitting }) => (
-            <Form>
-              <FormField name="name" label="Library Name" />
-              <button type="submit" className="btn" disabled={isSubmitting}>
-                Update
-              </button>
-              <button type="button" className="btn cancel-btn" onClick={() => setShowUpdateModal(false)}>
-                Cancel
-              </button>
-            </Form>
-          )}
-        </Formik>
-      </Modal>
-    );
-  };
 
 
   return (
@@ -155,30 +128,16 @@ function Home() {
       <h1>Your Libraries</h1>
       {libraryData && libraryData.length > 0 ? (
         libraryData.map(library => (
-          <div key={library.library_id} className="library-section">
+          <div key={library.id} className="library-section">
             <h2>{library.name}</h2>
             {library.books && library.books.length > 0 ? (
               <div className="book-list">
                 {library.books.map(book => {
-                  const ratingObj = book.rating ?? {
-                    userRating: book.userRating,
-                    globalRating: book.globalRating
-                  };
                   return (
                     <BookCard
                       key={book.id}
-                      book={{ ...book, libraryId: library.library_id, rating: ratingObj }}
-                      onRate={(bookId, newRating) => handleRating(library.library_id, bookId, newRating)}
-                      onDelete={(bookId) => {
-                        setSessionData(prev => ({
-                          ...prev,
-                          libraries: prev.libraries.map(lib =>
-                            lib.library_id === library.library_id
-                              ? { ...lib, books: lib.books.filter(b => b.id !== bookId) }
-                              : lib
-                          )
-                        }));
-                      }}
+                      book={{ ...book, libraryId: library.id }}
+                      allowDelete={true}
                     />
                   );
                 })}
@@ -187,10 +146,10 @@ function Home() {
               <p>No books found in this library.</p>
             )}
             <div className="button-group">
-              <button className="btn" onClick={() => navigate(`/books/new?libraryId=${library.library_id}`)}>
+              <button className="btn" onClick={() => navigate(`/books/new?libraryId=${library.id}`)}>
                 Add New Book
               </button>
-              <button className="btn delete-btn" onClick={() => deleteLibrary(library.library_id)}>
+              <button className="btn delete-btn" onClick={() => deleteLibrary(library.id)}>
                 Delete Library
               </button>
               <button className="btn" onClick={() => { setSelectedLibrary(library); setShowUpdateModal(true); }}>
@@ -213,13 +172,41 @@ function Home() {
           </button>
         </div>
       )}
-      {renderUpdateModal()}
+      {showUpdateModal && (
+        <UpdateLibraryModal
+          library={selectedLibrary}
+          onClose={() => setShowUpdateModal(false)}
+          onSubmit={(id, newName) =>
+            fetch(`/api/libraries/${id}/books`, {
+              method: 'PATCH',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name: newName })
+            })
+              .then(response => {
+                if (!response.ok) throw new Error('Failed to update library');
+                return response.json();
+              })
+              .then(updatedLibrary => {
+                const libNorm = { ...updatedLibrary, id: updatedLibrary.id };
+                setSessionData(prev => ({
+                  ...prev,
+                  libraries: prev.libraries.map(lib =>
+                    lib.id === libNorm.id ? libNorm : lib
+                  )
+                }));
+              })
+              .catch(error => console.error('Error updating library:', error))
+              .finally(() => setShowUpdateModal(false))
+          }
+        />
+      )}
       {showLibraryModal && (
         <CreateLibraryModal 
           onClose={() => setShowLibraryModal(false)} 
           onSuccess={(newLibrary) => {
             const lib = {
-              library_id: newLibrary.id,
+              id: newLibrary.id,
               name: newLibrary.name,
               books: []
             };

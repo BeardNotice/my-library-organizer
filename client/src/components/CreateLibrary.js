@@ -41,7 +41,7 @@ function CreateLibraryModal({ onClose, onSuccess }) {
       })
       .then(data => {
         if (onSuccess) {
-          onSuccess(data); // Pass the new library to the parent
+          onSuccess(data); // Notify Home that a new library has been created
         }
         onClose();
         return data;

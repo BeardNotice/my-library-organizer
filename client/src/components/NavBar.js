@@ -5,6 +5,7 @@ import './NavBar.css';
 
 function NavBar({ onLogout }) {
     const { sessionData, setSessionData } = useContext(SessionContext);
+    // sessionData always exists; user prop only set when logged in, so we derive isLoggedIn from sessionData.user
     const isLoggedIn = Boolean(sessionData?.user);
     const currentPath = window.location.pathname;
     const hideAuthButton = currentPath === '/login';

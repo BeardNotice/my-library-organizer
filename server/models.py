@@ -114,9 +114,7 @@ class BookSchema(ma.SQLAlchemySchema):
     author = ma.auto_field()
     genre = ma.auto_field()
     published_year = ma.auto_field()
-    userRating = ma.Method('get_user_rating')
-    review_score = ma.Method('calculate_review_score')
-    globalRating = ma.Method('calculate_global_rating')
+    rating = ma.Method('get_rating')
     
     @staticmethod
     def get_average_rating(library_books):
@@ -134,9 +132,11 @@ class BookSchema(ma.SQLAlchemySchema):
     def calculate_global_rating(self, obj):
         return self.get_average_rating(obj.library_books)
 
-    def calculate_review_score(self, obj):
-        avg = self.get_average_rating(obj.library_books)
-        return avg if avg is not None else "not yet rated"
+    def get_rating(self, obj):
+        return {
+            "userRating": self.get_user_rating(obj),
+            "globalRating": self.calculate_global_rating(obj)
+        }
 
 class LibrarySchema(ma.SQLAlchemySchema):
     class Meta:
@@ -149,19 +149,3 @@ class LibrarySchema(ma.SQLAlchemySchema):
     private = ma.auto_field()
     books = ma.Nested(BookSchema, many=True)
 
-    # @pre_dump
-    # def remove_invalid_books(self, data, **kwargs):
-    #     data.books = [book for book in data.books if isinstance(book, Book)]
-    #     return data
-
-#no longer used
-
-# class LibraryBooksSchema(ma.SQLAlchemySchema):
-#     class Meta:
-#         model = LibraryBooks
-#         load_instance = True
-
-#     library_id = ma.auto_field()
-#     book_id = ma.auto_field()
-#     rating = ma.auto_field()
-#     book = ma.Nested(BookSchema(only=("id", "title", "author", "genre")))

@@ -1,5 +1,5 @@
-import React, { useContext } from 'react';
-import { SessionContext } from '../index';
+import React from 'react';
+import { useLibraryActions } from './UseLibraryActions';
 import './BookCard.css'
 
 const cozyColors = [
@@ -29,33 +29,13 @@ function StarRating({ rating, onRate }) {
   );
 }
 
-function BookCard({ book, onRate, onDelete, allowDelete = true }) {
-  const { sessionData } = useContext(SessionContext);
-  const isLoggedIn = Boolean(sessionData?.user);
-  // Inline style calculation
+function BookCard({ book, allowDelete = true }) {
+  const { deleteBook, rateBook } = useLibraryActions();
+  // Pick colors for this card based on the book’s ID
   const index = book.id % cozyColors.length;
   const { background, text } = cozyColors[index];
   const style = { backgroundColor: background, color: text };
 
-  const handleDelete = () => {
-    if (window.confirm("Are you sure you want to delete this book?")) {
-      const url = `/api/library/${book.libraryId}/books/${book.id}`;
-      fetch(url, {
-        method: 'DELETE',
-        credentials: 'include'
-      })
-      .then(response => {
-        if (response.ok) {
-          if (onDelete) {
-            onDelete(book.id);
-          }
-        } else {
-          console.error('Failed to delete the book. Status:', response.status);
-        }
-      })
-      .catch(error => console.error("Error deleting book:", error));
-    }
-  };
 
   return (
     <div className="book-card" style={{ ...style }}>
@@ -64,19 +44,24 @@ function BookCard({ book, onRate, onDelete, allowDelete = true }) {
       <p>Genre: {book.genre}</p>
       <p>Published Year: {book.published_year}</p>
       <div className="rating-section">
-        {isLoggedIn && (
-          <p>Your Rating: {book.rating?.userRating ?? 'N/A'}</p>
-        )}
+        <p>Your Rating: {book.rating?.userRating ?? 'N/A'}</p>
         <p>Global Rating: {book.rating?.globalRating ?? 'N/A'}</p>
-        {onRate && (
-          <StarRating
-            rating={book.rating?.userRating ?? 0}
-            onRate={(newRating) => onRate(book.id, newRating)}
-          />
-        )}
+        <StarRating
+          rating={book.rating?.userRating ?? 0}
+          onRate={allowDelete ? stars => rateBook(book.libraryId, book.id, stars) : undefined}
+        />
       </div>
-      { isLoggedIn && allowDelete && (
-        <button onClick={handleDelete} className="delete-button">Delete Book</button>
+      {allowDelete && (
+        <button
+          onClick={() => {
+            if (window.confirm('Are you sure you want to delete this book?')) {
+              deleteBook(book.libraryId, book.id);
+            }
+          }}
+          className="delete-button"
+        >
+          Delete Book
+        </button>
       )}
     </div>
   );

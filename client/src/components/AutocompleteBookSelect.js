@@ -4,7 +4,7 @@ import { SessionContext } from '../index';
 
 function AutocompleteBookSelect({ onChange }) {
   const { sessionData } = useContext(SessionContext);
-  const books = sessionData?.libraries?.flatMap(lib => lib.books) || [];
+  const books = sessionData?.books || [];
   const options = books.map(book => ({
     value: book.id,
     label: book.title,

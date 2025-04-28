@@ -8,6 +8,7 @@ import './BookIndex.css';
 
 function BookIndex() {
   const { sessionData, setSessionData } = useContext(SessionContext);
+  // sessionData always exists; user prop only set when logged in, so we derive isLoggedIn from sessionData.user
   const isLoggedIn = Boolean(sessionData?.user);
   const libraries = sessionData?.libraries || [];
   const [filteredBooks, setFilteredBooks] = useState([]);
@@ -18,35 +19,20 @@ function BookIndex() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const rawBooks = sessionData?.books || [];
-    const shapedBooks = rawBooks.map(book => ({
-      ...book,
-      rating: {
-        userRating: book.userRating,
-        globalRating: book.globalRating
-      }
-    }));
-    setFilteredBooks(shapedBooks);
+    setFilteredBooks(sessionData?.books || []);
     setLoading(false);
   }, [sessionData]);
 
   const handleFilter = (selectedBook) => {
-    const rawBooks = sessionData?.books || [];
-    const shapedBooks = rawBooks.map(book => ({
-      ...book,
-      rating: {
-        userRating: book.userRating,
-        globalRating: book.globalRating
-      }
-    }));
-    if (selectedBook) {
-      const found = shapedBooks.find(b => b.id === selectedBook.value);
-      setFilteredBooks(found ? [found] : []);
-    } else {
-      setFilteredBooks(shapedBooks);
-    }
+    const all = sessionData?.books || [];
+    setFilteredBooks(
+      selectedBook
+        ? all.filter(b => b.id === selectedBook.value)
+        : all
+    );
   };
 
+  // Tell backend to add chosen book, then stitch it into state
   const handleAddToLibrary = (libraryId, book) => {
     fetch(`/api/libraries/${libraryId}/books`, {
       method: 'POST',
@@ -69,13 +55,13 @@ function BookIndex() {
       })
       .then(updatedLibrary => {
         const normalizedLib = {
-          library_id: updatedLibrary.id,
+          id: updatedLibrary.id,
           name: updatedLibrary.name,
           books: updatedLibrary.books
         };
         setSessionData(prev => {
           const updatedLibraries = prev.libraries.map(lib =>
-            lib.library_id === libraryId ? normalizedLib : lib
+            lib.id === libraryId ? normalizedLib : lib
           );
           const existingBooks = prev.books || [];
           const mergedBooks = [...existingBooks];
@@ -128,11 +114,11 @@ function BookIndex() {
               {libraries.map(lib => {
                 const alreadyAdded = lib.books && lib.books.some(b => b.id === modalBook.id);
                 return (
-                  <li key={lib.library_id}>
+                  <li key={lib.id}>
                     {alreadyAdded ? (
                       <span>{lib.name} (Already added)</span>
                     ) : (
-                      <button onClick={() => handleAddToLibrary(lib.library_id, modalBook)}>
+                      <button onClick={() => handleAddToLibrary(lib.id, modalBook)}>
                         {lib.name}
                       </button>
                     )}

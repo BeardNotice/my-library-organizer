@@ -11,18 +11,21 @@ from models import User, Library, Book, LibraryBooks, UserSchema, LibrarySchema,
 
 
 # Views go here!
+# Block requests to protected endpoints unless user is logged in
 @app.before_request
 def login_check():
-    
+    # Allow CORS preflight through without auth
     if request.method =='OPTIONS':
         return
     open_access_list = ['signup', 'login', 'logout', 'user_session', 'books', 'index', 'static']
 
     if (request.endpoint) not in open_access_list and (not session.get('user_id')):
         return {'error': '401 unauthorized'}, 401
-
+    
+# Handle new user signup and start session
 class Signup(Resource):
     def post(self):
+        # Read incoming sign-up data
         data = request.get_json()
         username = data.get("username")
         email = data.get("email")
@@ -50,7 +53,7 @@ class Signup(Resource):
             return user_schema.dump(user), 201
         except IntegrityError:
             return {'error': '401 Unauthorized'}, 401
-    
+# Authenticate existing user and start session
 class Login(Resource):
     def post(self):
         data = request.get_json()
@@ -67,12 +70,12 @@ class Login(Resource):
         session['user_id'] = user.id
         user_schema = UserSchema()
         return user_schema.dump(user), 200
-
+# Log out current user
 class Logout(Resource):
     def delete(self):
         session['user_id'] = None
         return {}, 204
-    
+# Return logged-in user and their libraries with ratings
 class CheckSession(Resource):
     def get(self):
         user_id = session.get('user_id')
@@ -87,28 +90,13 @@ class CheckSession(Resource):
         user_schema = UserSchema()
         user_data = user_schema.dump(user)
 
-        # Build libraries with nested books and ratings
-        libraries_data = []
-        book_schema = BookSchema(context={'user_id': user.id})
-        for lib in user.libraries:
-            lib_obj = {
-                "library_id": lib.id,
-                "name": lib.name,
-                "books": []
-            }
-            for book in lib.books:
-                book_dict = book_schema.dump(book)
-                rating_obj = {
-                    "userRating": book_dict.pop("userRating", None),
-                    "globalRating": book_dict.pop("globalRating", None)
-                }
-                book_dict.pop("review_score", None)
-                book_dict["rating"] = rating_obj
-                lib_obj["books"].append(book_dict)
-            libraries_data.append(lib_obj)
+        # Serialize libraries with nested books and ratings using LibrarySchema
+        library_schema = LibrarySchema(many=True, context={'user_id': user.id})
+        libraries_data = library_schema.dump(user.libraries)
 
         return {"user": user_data, "libraries": libraries_data}, 200
     
+# Create a new library for the current user
 class LibraryIndex(Resource):
 ##    def get(self):
 ##        user = get_current_user()
@@ -137,9 +125,7 @@ class LibraryIndex(Resource):
         except IntegrityError:
             return {'error': "422 Unprocessable Entity"}, 422
 
-
-
-
+# Manage library contents: rename, add books, delete library
 class LibraryBooksResource(Resource):
     def patch(self, id):
         user_id = session.get('user_id')
@@ -201,7 +187,7 @@ class LibraryBooksResource(Resource):
         db.session.delete(library)
         db.session.commit()
         return {}, 204
-    
+# Update or remove a specific book rating in a library
 class LibraryBookReview(Resource):
     def patch(self, library_id, book_id):
         user_id = session.get('user_id')
@@ -250,7 +236,7 @@ class LibraryBookReview(Resource):
         db.session.delete(library_book)
         db.session.commit()
         return {}, 204
-            
+# Fetch full book list with user and global ratings
 class BooksIndex(Resource):
     def get(self):
         books = Book.query.all()

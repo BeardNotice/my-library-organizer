@@ -6,22 +6,31 @@ import "./index.css";
 export const SessionContext = createContext(null);
 
 function Root() {
-  const [sessionData, setSessionData] = useState(null);
+  const [sessionData, setSessionData] = useState({});
   const [isSessionChecked, setIsSessionChecked] = useState(false);
 
   useEffect(() => {
+    // Kick off loading user session before showing the app
     async function initialize() {
-      let session = null;
       try {
         const res = await fetch('/api/user_session', { credentials: 'include' });
-        if (res.ok) session = await res.json();
-      } catch {} // ignore
-      let books = [];
+        if (res.ok) {
+          const data = await res.json();
+          setSessionData(prev => ({ ...prev, user: data.user, libraries: data.libraries }));
+        }
+      } catch (e) {
+        console.error('Session init failed', e);
+      }
+      // After session loads, grab the full book catalog
       try {
         const resBooks = await fetch('/api/books', { credentials: 'include' });
-        if (resBooks.ok) books = await resBooks.json();
-      } catch {} // ignore
-      setSessionData({ ...session, books });
+        if (resBooks.ok) {
+          const list = await resBooks.json();
+          setSessionData(prev => ({ ...prev, books: list }));
+        }
+      } catch (e) {
+        console.error('Books init failed', e);
+      }
       setIsSessionChecked(true);
     }
     initialize();

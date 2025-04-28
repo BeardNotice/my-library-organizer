@@ -9,6 +9,7 @@ import './NewBook.css';
 
 function NewBook() {
   const { sessionData, setSessionData } = useContext(SessionContext);
+  // sessionData always exists; user prop only set when logged in, so we derive isLoggedIn from sessionData.user
   const isLoggedIn = Boolean(sessionData?.user);
   const [libraryId, setLibraryId] = useState(null);
   const navigate = useNavigate();
@@ -26,7 +27,7 @@ function NewBook() {
     if (queryLibraryId) {
       setLibraryId(queryLibraryId);
     } else if (!libraryId && libs.length > 0) {
-      setLibraryId(libs[0].library_id);
+      setLibraryId(libs[0].id);
     } else if (!libraryId) {
       fetch('/api/libraries', { credentials: 'include' })
         .then(response => {
@@ -37,7 +38,7 @@ function NewBook() {
         })
         .then(data => {
           if (data && data.length > 0) {
-            setLibraryId(data[0].library_id);
+            setLibraryId(data[0].id);
           } else {
             console.error('No library found for this user');
           }
@@ -63,6 +64,7 @@ function NewBook() {
       return;
     }
 
+    // Build payload: use selectedBook info or new details
     let payload = { ...values };
     if (values.selectedBook) {
       payload.book_id = values.selectedBook.value;
@@ -94,16 +96,29 @@ function NewBook() {
           return response.json().then(updatedLibrary => {
             // Normalize and update the library in sessionData
             const normalizedLib = {
-              library_id: updatedLibrary.id,
+              id: updatedLibrary.id,
               name: updatedLibrary.name,
               books: updatedLibrary.books
             };
-            setSessionData(prev => ({
-              ...prev,
-              libraries: prev.libraries.map(lib =>
-                lib.library_id === normalizedLib.library_id ? normalizedLib : lib
-              )
-            }));
+            setSessionData(prev => {
+              // update libraries
+              const updatedLibraries = prev.libraries.map(lib =>
+                lib.id === normalizedLib.id ? normalizedLib : lib
+              );
+              // merge global books
+              const existingBooks = prev.books || [];
+              const mergedBooks = [...existingBooks];
+              normalizedLib.books.forEach(book => {
+                if (!existingBooks.some(b => b.id === book.id)) {
+                  mergedBooks.push(book);
+                }
+              });
+              return {
+                ...prev,
+                libraries: updatedLibraries,
+                books: mergedBooks
+              };
+            });
             navigate('/');
             return updatedLibrary;
           });
