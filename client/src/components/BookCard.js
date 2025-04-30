@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLibraryActions } from '../hooks/UseLibraryActions';
-import './BookCard.css'
+import './BookCard.css';
 
 const cozyColors = [
   { background: '#d8c4a6', text: '#3b2f2f' }, // faded parchment + dark brown

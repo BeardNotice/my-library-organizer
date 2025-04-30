@@ -1,5 +1,5 @@
 import { Field, ErrorMessage } from 'formik';
-import './FormField.css'
+import './FormField.css';
 
 function FormField({ label, ...props }) {
   return (

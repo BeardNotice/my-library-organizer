@@ -1,5 +1,5 @@
-import React, { useContext } from 'react';
-import { NavLink, useNavigate } from "react-router-dom";
+import { useContext } from 'react';
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { SessionContext } from '../contexts/SessionProvider';
 import './NavBar.css';
 
@@ -7,8 +7,8 @@ function NavBar() {
     const { sessionData, setSessionData } = useContext(SessionContext);
     // sessionData always exists; user prop only set when logged in, so we derive isLoggedIn from sessionData.user
     const isLoggedIn = Boolean(sessionData?.user);
-    const currentPath = window.location.pathname;
-    const hideAuthButton = currentPath === '/login';
+    const { pathname } = useLocation();
+    const hideAuthButton = pathname === '/login';
     const navigate = useNavigate();
 
     // Log out the current user, clear user and libraries from session

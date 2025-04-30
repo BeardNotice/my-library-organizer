@@ -7,7 +7,8 @@ from flask_restful import Resource
 from sqlalchemy.exc import IntegrityError
 # Local imports
 from config import app, db, api
-from models import User, Library, Book, LibraryBooks, UserSchema, LibrarySchema, BookSchema
+from models import User, Library, Book, LibraryBooks
+from schemas import UserSchema, LibrarySchema, BookSchema
 
 
 # Views go here!
@@ -17,7 +18,11 @@ def login_check():
     # Allow CORS preflight through without auth
     if request.method =='OPTIONS':
         return
-    open_access_list = ['signup', 'login', 'logout', 'user_session', 'books', 'index', 'static']
+    open_access_list = [
+        'signup', 'login', 'logout', 'user_session',
+        'libraries', 'library', 'library_books', 'library_book_review',
+        'books', 'static'
+    ]
 
     if (request.endpoint) not in open_access_list and (not session.get('user_id')):
         return {'error': '401 unauthorized'}, 401

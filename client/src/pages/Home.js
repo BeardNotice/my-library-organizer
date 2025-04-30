@@ -9,7 +9,7 @@ import { Formik, Form } from 'formik';
 import Modal from '../components/Modal';
 import FormField from '../components/FormField';
 import { librarySchema } from '../components/ValidationSchema';
-import './Home.css'
+import './Home.css';
 
 function UpdateLibraryModal({ library, onClose, onSubmit }) {
   if (!library) return null;

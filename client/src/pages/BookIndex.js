@@ -71,7 +71,7 @@ function BookIndex() {
   const isLoggedIn = Boolean(sessionData?.user);
   const libraries = sessionData?.libraries || [];
   const [filteredBooks, setFilteredBooks] = useState([]);
-  const [loading, setLoading] = useState(!sessionData);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [modalBook, setModalBook] = useState(null);
   const [addedMessage, setAddedMessage] = useState(null);

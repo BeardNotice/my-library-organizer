@@ -4,7 +4,7 @@ import * as Yup from 'yup';
 import { SessionContext } from '../contexts/SessionProvider';
 import { useNavigate, Link } from 'react-router-dom';
 import FormField from '../components/FormField';
-import './Login.css'
+import './Login.css';
 
 function Login() {
   const navigate = useNavigate();
