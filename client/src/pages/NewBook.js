@@ -9,85 +9,67 @@ import { SessionContext } from '../contexts/SessionProvider';
 import './NewBook.css';
 
 // Add new book to library and update sessionData, then navigate home
-async function addNewBook(values, libraryId, setSessionData, navigate, setSubmitting, setErrors) {
-  if (!libraryId) {
-    setErrors({ title: 'Library not found' });
-    setSubmitting(false);
-    return;
-  }
-  let payload = { ...values };
-  if (values.selectedBook) {
-    payload.book_id = values.selectedBook.value;
-    if (!payload.title) payload.title = values.selectedBook.label;
-    if (!payload.author && values.selectedBook.author) payload.author = values.selectedBook.author;
-  }
-  delete payload.selectedBook;
-  if (payload.published_year === '') {
-    payload.published_year = null;
-  } else {
-    payload.published_year = Number(payload.published_year);
-  }
-  // Early exit: prevent submission if both title and selectedBook are empty
-  if (!payload.title && !values.selectedBook) {
-    setErrors({ title: 'Title is required' });
-    setSubmitting(false);
-    return;
-  }
-  // Validate rating to be between 1 and 5 before submission
-  if (payload.rating !== undefined && payload.rating !== '') {
-    payload.rating = Number(payload.rating);
-    if (payload.rating < 1 || payload.rating > 5) {
-      setErrors({ rating: 'Rating must be between 1 and 5' });
-      setSubmitting(false);
-      return;
-    }
-  } else {
-    delete payload.rating;
-  }
+async function addNewBook({ values, libraryId, setSessionData, navigate, setSubmitting, setErrors }) {
   try {
-    // Add new book to the library (and create globally if needed)
-    const response = await fetch(`/api/libraries/${libraryId}/books`, {
+    let bookId = values.selectedBook?.value;
+    // 1) Create global book if none selected
+    if (!bookId) {
+      const createRes = await fetch('/api/books', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: values.title,
+          author: values.author,
+          genre: values.genre,
+          published_year: values.published_year || null
+        })
+      });
+      const created = await createRes.json();
+      if (!createRes.ok) {
+        setErrors({ title: created.error || 'Could not create book' });
+        setSubmitting(false);
+        return;
+      }
+      bookId = created.id;
+    }
+
+    // 2) Link book into library
+    const linkPayload = { book_id: bookId };
+    if (values.rating) linkPayload.rating = Number(values.rating);
+
+    const linkRes = await fetch(`/api/libraries/${libraryId}/books`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(linkPayload)
     });
-    const newBook = await response.json();
-    if (!response.ok) {
-      const errorMsg = newBook.error || 'Error adding book to library';
-      setErrors({ title: errorMsg });
-      alert(errorMsg);
+    const linkedBook = await linkRes.json();
+    if (!linkRes.ok) {
+      setErrors({ title: linkedBook.error || 'Could not add to library' });
+      setSubmitting(false);
       return;
     }
+
+    // 3) Merge into context
     setSessionData(prev => {
       const updatedLibraries = prev.libraries.map(lib =>
         lib.id === libraryId
-          ? {
-              ...lib,
-              books: lib.books.some(b => b.id === newBook.id)
-                ? lib.books
-                : [...lib.books, newBook]
-            }
+          ? { ...lib, books: [...lib.books, linkedBook] }
           : lib
       );
-      const updatedBooks = prev.books.some(b => b.id === newBook.id)
-        ? prev.books
-        : [...prev.books, newBook];
-
+      const alreadyGlobal = prev.books.some(b => b.id === linkedBook.id);
       return {
         ...prev,
         libraries: updatedLibraries,
-        books: updatedBooks
+        books: alreadyGlobal ? prev.books : [...prev.books, linkedBook]
       };
     });
+
     navigate('/');
-    return newBook;
-  } catch (error) {
-    console.error('Error adding new book:', error);
-    const errorMsg = error.message || 'Error adding new book';
-    setErrors({ title: errorMsg });
-    alert(errorMsg);
-    return;
+  } catch (err) {
+    console.error(err);
+    setErrors({ title: err.message });
   } finally {
     setSubmitting(false);
   }
@@ -135,7 +117,7 @@ function NewBook() {
         initialValues={initialValues}
         validationSchema={newBookSchema}
         onSubmit={(values, { setSubmitting, setErrors }) =>
-          addNewBook(values, libraryId, setSessionData, navigate, setSubmitting, setErrors)
+          addNewBook({ values, libraryId, setSessionData, navigate, setSubmitting, setErrors })
         }
       >
         {formik => (

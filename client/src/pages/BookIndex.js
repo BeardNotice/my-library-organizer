@@ -7,16 +7,12 @@ import Modal from "../components/Modal";
 import './BookIndex.css';
 
 // Add selected book to library, update session state, and show messages
-function addBookToLibrary(libraryId, book, setSessionData, setAddedMessage, setShowModal, setModalBook) {
+function addBookToLibrary({ libraryId, libraryName, book, setSessionData, setAddedMessage, setShowModal, setModalBook }) {
   fetch(`/api/libraries/${libraryId}/books`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      title: book.title,
-      author: book.author,
-      genre: book.genre,
-      published_year: book.published_year,
       book_id: book.id
     })
   })
@@ -55,7 +51,7 @@ function addBookToLibrary(libraryId, book, setSessionData, setAddedMessage, setS
           books: updatedBooks
         };
       });
-      setAddedMessage(`Book added to ${libraryId}`);
+      setAddedMessage(`Added "${addedBook.title}" to library "${libraryName}"`);
       setShowModal(false);
       setModalBook(null);
     })
@@ -128,7 +124,15 @@ function BookIndex() {
                     {alreadyAdded ? (
                       <span>{lib.name} (Already added)</span>
                     ) : (
-                      <button onClick={() => addBookToLibrary(lib.id, modalBook, setSessionData, setAddedMessage, setShowModal, setModalBook)}>
+                      <button onClick={() => addBookToLibrary({
+                        libraryId: lib.id,
+                        libraryName: lib.name,
+                        book: modalBook,
+                        setSessionData,
+                        setAddedMessage,
+                        setShowModal,
+                        setModalBook
+                      })}>
                         {lib.name}
                       </button>
                     )}

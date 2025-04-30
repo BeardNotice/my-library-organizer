@@ -156,51 +156,35 @@ class LibraryBookList(Resource):
         if not library or library.user_id != user_id:
             return {"error": "Library not found or access unauthorized"}, 404
 
-        data = request.get_json()
+        data = request.get_json() or {}
         book_id = data.get('book_id')
-        title = data.get('title')
-        author = data.get('author')
-        genre = data.get('genre')
-        published_year = data.get('published_year')
         rating = data.get('rating')
 
-        # If book_id is provided, fetch book and prevent overwriting fields
-        if book_id is not None:
-            book = db.session.get(Book, book_id)
-            # Skip overwriting if book exists
-            if book:
-                title = book.title
-                author = book.author
-                genre = book.genre
-                published_year = book.published_year
-        else:
-            book = None
-
-        if not title:
-            return {"error": "Missing required field 'title'"}, 400
-        if not author:
-            author = "Unknown"
-
-        if rating is not None and (rating < 1 or rating > 5):
-            return {"error": "Rating must be between 1 and 5"}, 400
-
+        if not book_id:
+            return {"error": "Missing required field 'book_id'"}, 400
+        book = db.session.get(Book, book_id)
         if not book:
-            book = Book(title=title, author=author, genre=genre, published_year=published_year)
-            db.session.add(book)
-            db.session.flush()  # Ensure book.id is available
+            return {"error": "Book not found"}, 404
 
-        # Before appending, check if LibraryBooks entry already exists
-        if LibraryBooks.query.filter_by(library_id=id, book_id=book.id).first():
+        if rating is not None:
+            try:
+                rating = int(rating)
+            except (ValueError, TypeError):
+                return {"error": "Invalid rating provided"}, 400
+            if rating < 1 or rating > 5:
+                return {"error": "Rating must be between 1 and 5"}, 400
+
+        # Prevent duplicate
+        existing = LibraryBooks.query.filter_by(library_id=id, book_id=book_id).first()
+        if existing:
             return {"error": "Book already exists in this library."}, 409
 
-        if book not in library.books:
-            library.books.append(book)
-
-        library_book = LibraryBooks.query.filter_by(library_id=id, book_id=book.id).first()
-        if library_book:
-            library_book.rating = rating
-
+        library.books.append(book)
+        lb = LibraryBooks.query.filter_by(library_id=id, book_id=book_id).first()
+        if rating is not None:
+            lb.rating = rating
         db.session.commit()
+
         book_schema = BookSchema(context={'user_id': session.get('user_id')})
         return book_schema.dump(book), 201
 # Update or remove a specific book rating in a library
@@ -261,6 +245,30 @@ class BookCollection(Resource):
         user_id = session.get('user_id')
         book_schema = BookSchema(many=True, context={'user_id': user_id})
         return book_schema.dump(books), 200
+
+    def post(self):
+        """Create a new global Book."""
+        data = request.get_json() or {}
+        title = data.get('title')
+        author = data.get('author')
+        genre = data.get('genre')
+        published_year = data.get('published_year')
+
+        if not title:
+            return {"error": "Missing required field 'title'"}, 400
+        if not author:
+            author = "Unknown"
+        # Validate published_year
+        if published_year is not None:
+            try:
+                published_year = int(published_year)
+            except (ValueError, TypeError):
+                return {"error": "Invalid published_year"}, 400
+        book = Book(title=title, author=author, genre=genre, published_year=published_year)
+        db.session.add(book)
+        db.session.commit()
+        book_schema = BookSchema()
+        return book_schema.dump(book), 201
 
 
 api.add_resource(Signup, "/api/signup", endpoint='signup')

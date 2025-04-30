@@ -6,7 +6,7 @@ import { librarySchema } from '../components/ValidationSchema';
 import Modal from '../components/Modal';
 
 // Send new library to server and handle success or validation errors
-function createLibrary(values, { setSubmitting, setErrors }, onSuccess, onClose) {
+function createLibrary({ values, formikHelpers: { setSubmitting, setErrors }, onSuccess, onClose }) {
   fetch('/api/libraries', {
     method: 'POST',
     credentials: 'include',
@@ -43,7 +43,7 @@ function CreateLibrary({ onClose, onSuccess }) {
       <div className='create-library-container'>
         <h1>Create Library</h1>
         <Formik initialValues={initialValues} validationSchema={librarySchema}
-          onSubmit={(values, helpers) => createLibrary(values, helpers, onSuccess, onClose)}
+          onSubmit={(values, helpers) => createLibrary({ values, formikHelpers: helpers, onSuccess, onClose })}
         >
           {formik => (
             <Form>
