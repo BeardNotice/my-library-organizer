@@ -27,6 +27,11 @@ export const newBookSchema = Yup.object({
     )
     .integer('Must be an integer')
     .min(0, 'Invalid year')
+    .max(new Date().getFullYear(), 'Year cannot be in the future')
+    .nullable(),
+  rating: Yup.number()
+    .min(1, 'Rating must be at least 1')
+    .max(5, 'Rating can be at most 5')
     .nullable(),
   selectedBook: Yup.object().nullable()
 });

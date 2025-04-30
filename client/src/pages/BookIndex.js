@@ -23,38 +23,46 @@ function addBookToLibrary(libraryId, book, setSessionData, setAddedMessage, setS
     .then(async response => {
       if (!response.ok) {
         const text = await response.text();
-        throw new Error(text || 'Error adding book to library');
+        // Try to parse error message as JSON, fallback to raw text
+        let errorMsg = text;
+        try {
+          const parsed = JSON.parse(text);
+          errorMsg = parsed.error || text;
+        } catch (e) {}
+        throw new Error(errorMsg || 'Error adding book to library');
       }
       return response.json();
     })
-    .then(updatedLibrary => {
-      const normalizedLib = {
-        id: updatedLibrary.id,
-        name: updatedLibrary.name,
-        books: updatedLibrary.books
-      };
+    .then(addedBook => {
       setSessionData(prev => {
         const updatedLibraries = prev.libraries.map(lib =>
-          lib.id === libraryId ? normalizedLib : lib
+          lib.id === libraryId
+            ? {
+                ...lib,
+                books: lib.books.some(b => b.id === addedBook.id)
+                  ? lib.books
+                  : [...lib.books, addedBook]
+              }
+            : lib
         );
-        const existingBooks = prev.books || [];
-        const mergedBooks = [...existingBooks];
-        normalizedLib.books.forEach(book => {
-          if (!existingBooks.some(b => b.id === book.id)) {
-            mergedBooks.push(book);
-          }
-        });
+        const updatedBooks = prev.books.some(b => b.id === addedBook.id)
+          ? prev.books
+          : [...prev.books, addedBook];
+
         return {
           ...prev,
           libraries: updatedLibraries,
-          books: mergedBooks
+          books: updatedBooks
         };
       });
-      setAddedMessage(`Book added to ${normalizedLib.name}`);
+      setAddedMessage(`Book added to ${libraryId}`);
       setShowModal(false);
       setModalBook(null);
     })
-    .catch(error => console.error("Error adding book to library:", error));
+    .catch(error => {
+      console.error("Error adding book to library:", error);
+      alert(`Error: ${error.message}`);
+    });
 }
 
 function BookIndex() {

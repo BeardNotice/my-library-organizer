@@ -76,7 +76,7 @@ class Logout(Resource):
         session['user_id'] = None
         return {}, 204
 # Return logged-in user and their libraries with ratings
-class CheckSession(Resource):
+class SessionUser(Resource):
     def get(self):
         user_id = session.get('user_id')
         user = None
@@ -97,7 +97,7 @@ class CheckSession(Resource):
         return {"user": user_data, "libraries": libraries_data}, 200
     
 # Create a new library for the current user
-class LibraryIndex(Resource):
+class LibraryCollection(Resource):
     def post(self):
         user_id = session.get('user_id')
         user = db.session.get(User, user_id)
@@ -144,7 +144,7 @@ class LibraryResource(Resource):
         return {}, 204
 
 # Manage library contents: add books to a library
-class LibraryBooksResource(Resource):
+class LibraryBookList(Resource):
     def post(self, id):
         user_id = session.get('user_id')
         library = db.session.get(Library, id)
@@ -159,6 +159,18 @@ class LibraryBooksResource(Resource):
         published_year = data.get('published_year')
         rating = data.get('rating')
 
+        # If book_id is provided, fetch book and prevent overwriting fields
+        if book_id is not None:
+            book = db.session.get(Book, book_id)
+            # Skip overwriting if book exists
+            if book:
+                title = book.title
+                author = book.author
+                genre = book.genre
+                published_year = book.published_year
+        else:
+            book = None
+
         if not title:
             return {"error": "Missing required field 'title'"}, 400
         if not author:
@@ -167,13 +179,14 @@ class LibraryBooksResource(Resource):
         if rating is not None and (rating < 1 or rating > 5):
             return {"error": "Rating must be between 1 and 5"}, 400
 
-        # Only load existing Book when a valid book_id is provided
-        book = None
-        if book_id is not None:
-            book = db.session.get(Book, book_id)
         if not book:
             book = Book(title=title, author=author, genre=genre, published_year=published_year)
             db.session.add(book)
+            db.session.flush()  # Ensure book.id is available
+
+        # Before appending, check if LibraryBooks entry already exists
+        if LibraryBooks.query.filter_by(library_id=id, book_id=book.id).first():
+            return {"error": "Book already exists in this library."}, 409
 
         if book not in library.books:
             library.books.append(book)
@@ -183,10 +196,10 @@ class LibraryBooksResource(Resource):
             library_book.rating = rating
 
         db.session.commit()
-        library_schema = LibrarySchema(context={'user_id': session.get('user_id')})
-        return library_schema.dump(library), 201
+        book_schema = BookSchema(context={'user_id': session.get('user_id')})
+        return book_schema.dump(book), 201
 # Update or remove a specific book rating in a library
-class LibraryBookReview(Resource):
+class LibraryBookDetail(Resource):
     # Update a book’s rating in a specific library, enforcing 1–5 range
     def patch(self, library_id, book_id):
         user_id = session.get('user_id')
@@ -236,7 +249,7 @@ class LibraryBookReview(Resource):
         db.session.commit()
         return {}, 204
 # Fetch full book list with user and global ratings
-class BooksIndex(Resource):
+class BookCollection(Resource):
     # Return full catalog of books, including user-specific and global ratings
     def get(self):
         books = Book.query.all()
@@ -244,14 +257,15 @@ class BooksIndex(Resource):
         book_schema = BookSchema(many=True, context={'user_id': user_id})
         return book_schema.dump(books), 200
 
+
 api.add_resource(Signup, "/api/signup", endpoint='signup')
 api.add_resource(Login, "/api/login", endpoint='login')
 api.add_resource(Logout, "/api/logout", endpoint='logout')
-api.add_resource(CheckSession, "/api/user_session", endpoint="user_session")
-api.add_resource(LibraryIndex, "/api/libraries", endpoint="libraries")
+api.add_resource(SessionUser, "/api/user_session", endpoint="user_session")
+api.add_resource(LibraryCollection, "/api/libraries", endpoint="libraries")
 api.add_resource(LibraryResource, "/api/libraries/<int:id>", endpoint="library")
-api.add_resource(LibraryBooksResource, "/api/libraries/<int:id>/books", endpoint="library_books")
-api.add_resource(LibraryBookReview, "/api/libraries/<int:library_id>/books/<int:book_id>", endpoint="library_book_review")
-api.add_resource(BooksIndex, "/api/books", endpoint="books")
+api.add_resource(LibraryBookList, "/api/libraries/<int:id>/books", endpoint="library_books")
+api.add_resource(LibraryBookDetail, "/api/libraries/<int:library_id>/books/<int:book_id>", endpoint="library_book_review")
+api.add_resource(BookCollection, "/api/books", endpoint="books")
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
