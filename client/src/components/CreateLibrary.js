@@ -1,5 +1,5 @@
 import React from 'react';
-import { useRequireLogin } from '../components/UseRequireLogin';
+import { useRequireLogin } from '../hooks/UseRequireLogin';
 import { Formik, Form } from 'formik';
 import FormField from '../components/FormField';
 import { librarySchema } from '../components/ValidationSchema';
@@ -29,7 +29,7 @@ function createLibrary(values, { setSubmitting, setErrors }, onSuccess, onClose)
     .finally(() => setSubmitting(false));
 }
 
-function CreateLibraryModal({ onClose, onSuccess }) {
+function CreateLibrary({ onClose, onSuccess }) {
   useRequireLogin()
 
   const initialValues = {
@@ -64,4 +64,4 @@ function CreateLibraryModal({ onClose, onSuccess }) {
   );
 }
 
-export default CreateLibraryModal;
+export default CreateLibrary;

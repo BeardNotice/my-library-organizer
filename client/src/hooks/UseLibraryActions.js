@@ -1,6 +1,6 @@
 // Central hook: delete or rate books, automatically update context
 import { useContext } from 'react';
-import { SessionContext } from '../index';
+import { SessionContext } from '../contexts/SessionProvider';
 
 export function useLibraryActions() {
   const { setSessionData } = useContext(SessionContext);
@@ -51,7 +51,7 @@ export function useLibraryActions() {
   }
 
   function deleteLibrary(libraryId) {
-    return fetch(`/api/libraries/${libraryId}/books`, {
+    return fetch(`/api/libraries/${libraryId}`, {
       method: 'DELETE',
       credentials: 'include'
     })
@@ -65,7 +65,7 @@ export function useLibraryActions() {
   }
 
   function updateLibrary(libraryId, newName) {
-    return fetch(`/api/libraries/${libraryId}/books`, {
+    return fetch(`/api/libraries/${libraryId}`, {
       method: 'PATCH',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },

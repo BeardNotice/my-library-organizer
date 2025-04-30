@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useRequireLogin } from '../components/UseRequireLogin';
+import { useRequireLogin } from '../hooks/UseRequireLogin';
 import { Formik, Form } from 'formik';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import FormField from '../components/FormField';
 import AutocompleteBookSelect from '../components/AutocompleteBookSelect';
 import { newBookSchema } from '../components/ValidationSchema';
-import { SessionContext } from '../index';
+import { SessionContext } from '../contexts/SessionProvider';
 import './NewBook.css';
 
 // Add new book to library and update sessionData, then navigate home
@@ -79,7 +79,7 @@ function NewBook() {
   useRequireLogin()
   const [searchParams] = useSearchParams();
 
-  // Pick library ID from URL or session; if none, fetch default library
+  // Pick library ID from URL or session; if none, use the first library
   useEffect(() => {
     const libs = sessionData.libraries || [];
     const queryLibraryId = searchParams.get('libraryId');
@@ -87,24 +87,6 @@ function NewBook() {
       setLibraryId(queryLibraryId);
     } else if (!libraryId && libs.length > 0) {
       setLibraryId(libs[0].id);
-    } else if (!libraryId) {
-      fetch('/api/libraries', { credentials: 'include' })
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Not authenticated or error fetching library');
-          }
-          return response.json();
-        })
-        .then(data => {
-          if (data && data.length > 0) {
-            setLibraryId(data[0].id);
-          } else {
-            console.error('No library found for this user');
-          }
-        })
-        .catch(error => {
-          console.error('Error fetching library:', error);
-        });
     }
   }, [searchParams, sessionData.libraries, libraryId]);
 
@@ -116,6 +98,10 @@ function NewBook() {
     selectedBook: null
   };
 
+
+  if (!libraryId) {
+    return <p>No libraries found. Please create a library first.</p>;
+  }
 
   return (
     <div className="new-book-container">

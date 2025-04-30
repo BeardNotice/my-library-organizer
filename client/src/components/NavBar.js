@@ -1,9 +1,9 @@
 import React, { useContext } from 'react';
 import { NavLink, useNavigate } from "react-router-dom";
-import { SessionContext } from '../index';
+import { SessionContext } from '../contexts/SessionProvider';
 import './NavBar.css';
 
-function NavBar({ onLogout }) {
+function NavBar() {
     const { sessionData, setSessionData } = useContext(SessionContext);
     // sessionData always exists; user prop only set when logged in, so we derive isLoggedIn from sessionData.user
     const isLoggedIn = Boolean(sessionData?.user);

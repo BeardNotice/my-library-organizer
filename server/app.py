@@ -118,9 +118,8 @@ class LibraryIndex(Resource):
         except IntegrityError:
             return {'error': "422 Unprocessable Entity"}, 422
 
-# Manage library contents: rename, add books, delete library
-class LibraryBooksResource(Resource):
-    # Add or update a book in a library: create book if needed, then attach and record rating
+# Handle rename and delete of a library
+class LibraryResource(Resource):
     def patch(self, id):
         user_id = session.get('user_id')
         library = db.session.get(Library, id)
@@ -134,7 +133,18 @@ class LibraryBooksResource(Resource):
         db.session.commit()
         library_schema = LibrarySchema()
         return library_schema.dump(library), 200
-    
+
+    def delete(self, id):
+        user_id = session.get('user_id')
+        library = db.session.get(Library, id)
+        if not library or library.user_id != user_id:
+            return {"error": "Library not found or access unauthorized"}, 404
+        db.session.delete(library)
+        db.session.commit()
+        return {}, 204
+
+# Manage library contents: add books to a library
+class LibraryBooksResource(Resource):
     def post(self, id):
         user_id = session.get('user_id')
         library = db.session.get(Library, id)
@@ -175,15 +185,6 @@ class LibraryBooksResource(Resource):
         db.session.commit()
         library_schema = LibrarySchema(context={'user_id': session.get('user_id')})
         return library_schema.dump(library), 201
-
-    def delete(self, id):
-        user_id = session.get('user_id')
-        library = db.session.get(Library, id)
-        if not library or library.user_id != user_id:
-            return {"error": "Library not found or access unauthorized"}, 404
-        db.session.delete(library)
-        db.session.commit()
-        return {}, 204
 # Update or remove a specific book rating in a library
 class LibraryBookReview(Resource):
     # Update a book’s rating in a specific library, enforcing 1–5 range
@@ -248,6 +249,7 @@ api.add_resource(Login, "/api/login", endpoint='login')
 api.add_resource(Logout, "/api/logout", endpoint='logout')
 api.add_resource(CheckSession, "/api/user_session", endpoint="user_session")
 api.add_resource(LibraryIndex, "/api/libraries", endpoint="libraries")
+api.add_resource(LibraryResource, "/api/libraries/<int:id>", endpoint="library")
 api.add_resource(LibraryBooksResource, "/api/libraries/<int:id>/books", endpoint="library_books")
 api.add_resource(LibraryBookReview, "/api/libraries/<int:library_id>/books/<int:book_id>", endpoint="library_book_review")
 api.add_resource(BooksIndex, "/api/books", endpoint="books")

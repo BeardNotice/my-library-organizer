@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
-import { useRequireLogin } from '../components/UseRequireLogin';
-import { useLibraryActions } from '../components/UseLibraryActions';
-import { SessionContext } from '../index';
+import { useRequireLogin } from '../hooks/UseRequireLogin';
+import { useLibraryActions } from '../hooks/UseLibraryActions';
+import { SessionContext } from '../contexts/SessionProvider';
 import { useNavigate } from 'react-router-dom';
 import BookCard from '../components/BookCard';
 import CreateLibraryModal from '../components/CreateLibrary';

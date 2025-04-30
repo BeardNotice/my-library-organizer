@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate, Link, Outlet } from 'react-router-dom';
 import BookCard from '../components/BookCard';
 import AutocompleteBookSelect from '../components/AutocompleteBookSelect';
-import { SessionContext } from '../index';
+import { SessionContext } from '../contexts/SessionProvider';
 import Modal from "../components/Modal";
 import './BookIndex.css';
 

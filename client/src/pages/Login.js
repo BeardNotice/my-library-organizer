@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
-import { SessionContext } from '../index';
+import { SessionContext } from '../contexts/SessionProvider';
 import { useNavigate, Link } from 'react-router-dom';
 import FormField from '../components/FormField';
 import './Login.css'
