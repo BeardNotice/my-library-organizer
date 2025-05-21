@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Standard library imports
-
+import os
 from flask import request, session, make_response
 from flask_restful import Resource
 from sqlalchemy.exc import IntegrityError
@@ -13,9 +13,11 @@ from schemas import UserSchema, LibrarySchema, BookSchema
 
 # Set additional cookie parameters for secure deployment
 # Configure these directly instead of using before_first_request which is deprecated
-app.config['SESSION_COOKIE_SECURE'] = app.config.get('ENV') == 'production'
+app.config['SESSION_COOKIE_SECURE'] = True if os.environ.get('RENDER') else False
 app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SAMESITE'] = 'None' if os.environ.get('RENDER') else 'Lax'
+if os.environ.get('RENDER'):
+    app.config['SESSION_COOKIE_DOMAIN'] = '.onrender.com'
 
 # Views go here!
 # Block requests to protected endpoints unless user is logged in
@@ -27,7 +29,7 @@ def login_check():
     open_access_list = [
         'signup', 'login', 'logout', 'user_session',
         'libraries', 'library', 'library_books', 'library_book_review',
-        'books', 'static', 'many_ratings', 'min_rating'
+        'books', 'static', 'many_ratings', 'min_rating', 'check_auth'
     ]
 
     if (request.endpoint) not in open_access_list and (not session.get('user_id')):
@@ -62,6 +64,7 @@ class Signup(Resource):
             session["user_id"] = user.id
             # Set cookie parameters for better cross-domain compatibility
             response = make_response(UserSchema().dump(user))
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
             response.status_code = 201
             return response
         except IntegrityError:
@@ -81,8 +84,10 @@ class Login(Resource):
             return {"error": "password incorrect"}, 401
 
         session['user_id'] = user.id
+        session.modified = True
         # Explicit cookie creation for better cross-domain compatibility
         response = make_response(UserSchema().dump(user))
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
         response.status_code = 200
         return response
 # Log out current user
@@ -110,6 +115,15 @@ class SessionUser(Resource):
         libraries_data = library_schema.dump(user.libraries)
 
         return {"user": user_data, "libraries": libraries_data}, 200
+    
+# Debug endpoint for testing auth
+class AuthCheck(Resource):
+    def get(self):
+        user_id = session.get('user_id')
+        if user_id:
+            return {"authenticated": True, "user_id": user_id}, 200
+        else:
+            return {"authenticated": False, "session_data": str(dict(session))}, 200
     
 # Create a new library for the current user
 class LibraryCollection(Resource):
@@ -313,5 +327,7 @@ api.add_resource(LibraryBookDetail, "/api/libraries/<int:library_id>/books/<int:
 api.add_resource(BookCollection, "/api/books", endpoint="books")
 api.add_resource(Rating, "/api/many_ratings/<int:count>", endpoint="many_ratings")
 api.add_resource(MinRating, "/api/min_rating/<int:rating>", endpoint='min_rating')
+api.add_resource(AuthCheck, "/api/check_auth", endpoint="check_auth")
+
 if __name__ == '__main__':
     app.run(port=5555, debug=True)

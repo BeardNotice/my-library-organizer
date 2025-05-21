@@ -40,7 +40,12 @@ bcrypt = Bcrypt(app)
 api = Api(app)
 
 # Instantiate CORS - ensure headers and credentials are properly handled
-CORS(app, supports_credentials=True, origins=["https://my-library-organizer.onrender.com", "http://localhost:3000"], allow_headers=["Content-Type", "Authorization"])
+CORS(app, 
+     supports_credentials=True, 
+     origins=["https://my-library-organizer.onrender.com", "http://localhost:3000"], 
+     allow_headers=["Content-Type", "Authorization"],
+     expose_headers=["Access-Control-Allow-Credentials"],
+     methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"])
 
 ma = Marshmallow(app)
 
