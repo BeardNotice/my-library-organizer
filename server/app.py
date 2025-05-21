@@ -11,6 +11,12 @@ from models import User, Library, Book, LibraryBooks
 from schemas import UserSchema, LibrarySchema, BookSchema
 
 
+# Set additional cookie parameters for secure deployment
+# Configure these directly instead of using before_first_request which is deprecated
+app.config['SESSION_COOKIE_SECURE'] = app.config.get('ENV') == 'production'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
 # Views go here!
 # Block requests to protected endpoints unless user is logged in
 @app.before_request
@@ -21,7 +27,7 @@ def login_check():
     open_access_list = [
         'signup', 'login', 'logout', 'user_session',
         'libraries', 'library', 'library_books', 'library_book_review',
-        'books', 'static'
+        'books', 'static', 'many_ratings', 'min_rating'
     ]
 
     if (request.endpoint) not in open_access_list and (not session.get('user_id')):
@@ -54,8 +60,10 @@ class Signup(Resource):
             db.session.commit()
 
             session["user_id"] = user.id
-            user_schema = UserSchema()
-            return user_schema.dump(user), 201
+            # Set cookie parameters for better cross-domain compatibility
+            response = make_response(UserSchema().dump(user))
+            response.status_code = 201
+            return response
         except IntegrityError:
             return {'error': '401 Unauthorized'}, 401
 # Authenticate existing user and start session
@@ -73,8 +81,10 @@ class Login(Resource):
             return {"error": "password incorrect"}, 401
 
         session['user_id'] = user.id
-        user_schema = UserSchema()
-        return user_schema.dump(user), 200
+        # Explicit cookie creation for better cross-domain compatibility
+        response = make_response(UserSchema().dump(user))
+        response.status_code = 200
+        return response
 # Log out current user
 class Logout(Resource):
     def delete(self):
@@ -189,7 +199,7 @@ class LibraryBookList(Resource):
         return book_schema.dump(book), 201
 # Update or remove a specific book rating in a library
 class LibraryBookDetail(Resource):
-    # Update a book’s rating in a specific library, enforcing 1–5 range
+    # Update a book's rating in a specific library, enforcing 1–5 range
     def patch(self, library_id, book_id):
         user_id = session.get('user_id')
         user = db.session.get(User, user_id)
@@ -269,7 +279,28 @@ class BookCollection(Resource):
         db.session.commit()
         book_schema = BookSchema()
         return book_schema.dump(book), 201
-
+    
+class Rating(Resource):
+    def get(self, count):
+        all_books = Book.query.all()
+        filtered = [book for book in all_books if len(book.library_books) >= count]
+        schema = BookSchema(many=True)
+        return schema.dump(filtered)
+    
+##Create a new resource called TopRatedBooks that returns all distinct books that have at least one rating of 5, using the LibraryBooks association table.
+## query the model for all instances
+## create a list comprehension that references the query (gets all)
+## create a nested list comprehension using any() which can then reference the association to librarybooks.
+## looks like "for every item in Book.query.all() if any book.library_books for each book.library_books .rating  is >= rating passed in, return that."
+## create the schema
+## return the schema
+class MinRating(Resource):
+    def get(self, rating):
+        books = Book.query.all()
+        selected = [book for book in books if any(librarybook.rating >= rating for librarybook in book.library_books)]
+        schema = BookSchema(many=True)
+        return schema.dump(selected)
+        
 
 api.add_resource(Signup, "/api/signup", endpoint='signup')
 api.add_resource(Login, "/api/login", endpoint='login')
@@ -280,5 +311,7 @@ api.add_resource(LibraryResource, "/api/libraries/<int:id>", endpoint="library")
 api.add_resource(LibraryBookList, "/api/libraries/<int:id>/books", endpoint="library_books")
 api.add_resource(LibraryBookDetail, "/api/libraries/<int:library_id>/books/<int:book_id>", endpoint="library_book_review")
 api.add_resource(BookCollection, "/api/books", endpoint="books")
+api.add_resource(Rating, "/api/many_ratings/<int:count>", endpoint="many_ratings")
+api.add_resource(MinRating, "/api/min_rating/<int:rating>", endpoint='min_rating')
 if __name__ == '__main__':
     app.run(port=5555, debug=True)

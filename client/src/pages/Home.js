@@ -4,7 +4,7 @@ import { useLibraryActions } from '../hooks/UseLibraryActions';
 import { SessionContext } from '../contexts/SessionProvider';
 import { useNavigate } from 'react-router-dom';
 import BookCard from '../components/BookCard';
-import CreateLibraryModal from '../components/CreateLibrary';
+import CreateLibrary from '../components/CreateLibrary';
 import { Formik, Form } from 'formik';
 import Modal from '../components/Modal';
 import FormField from '../components/FormField';
@@ -118,7 +118,7 @@ function Home() {
         />
       )}
       {showLibraryModal && (
-        <CreateLibraryModal 
+        <CreateLibrary 
           onClose={() => setShowLibraryModal(false)} 
           onSuccess={(newLibrary) => {
             const lib = {

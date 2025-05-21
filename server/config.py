@@ -21,7 +21,7 @@ app = Flask(__name__,
             static_folder='../client/build',
             template_folder='../client/build'
             )
-app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", 'cffccf6faa164a4896ad0b2efa28fe7d')
+app.config['SECRET_KEY'] = os.getenv("SECRET_KEY")
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URI', 'sqlite:///app.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.json.compact = False
@@ -39,8 +39,8 @@ bcrypt = Bcrypt(app)
 # Instantiate REST API
 api = Api(app)
 
-# Instantiate CORS
-CORS(app, supports_credentials=True)
+# Instantiate CORS - ensure headers and credentials are properly handled
+CORS(app, supports_credentials=True, origins=["https://my-library-organizer.onrender.com", "http://localhost:3000"], allow_headers=["Content-Type", "Authorization"])
 
 ma = Marshmallow(app)
 
