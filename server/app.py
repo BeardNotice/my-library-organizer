@@ -26,6 +26,9 @@ def login_check():
     # Allow CORS preflight through without auth
     if request.method =='OPTIONS':
         return
+    # Skip auth for non-API routes (static assets, index.html, etc.)
+    if not request.path.startswith('/api'):
+        return
     open_access_list = [
         'signup', 'login', 'logout', 'user_session',
         'libraries', 'library', 'library_books', 'library_book_review',
